@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/.next/
+frontend/out/
+backend/target/
+
+# Environment
+.env
+.env.local
+
+#IDE
+.vscode/
+
+# Docker volumes
+pgdata/
+
+#IA
+.commandcode
