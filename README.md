@@ -41,3 +41,21 @@ Para remover também os dados do banco:
 ```bash
 docker compose down -v
 ```
+
+## Testes do backend
+
+Os testes unitários do backend usam as bibliotecas JUnit, AssertJ e Mockito,
+já incluídas em `spring-boot-starter-test` (não exigem banco de dados nem os containers no ar).
+
+A partir da pasta `backend`:
+
+```bash
+# Rodar todos os testes
+mvn test
+```
+
+Para rodar apenas uma classe:
+
+```bash
+mvn test -Dtest=PlayerCalculatorTest
+```
