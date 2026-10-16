@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+
 export default function Home() {
   const [status, setStatus] = useState<string>("loading...");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/health")
+    fetch(`${API_URL}/api/v1/health`)
       .then((res) => res.json())
       .then((data) => setStatus(data.status))
       .catch(() => setStatus("error"));
