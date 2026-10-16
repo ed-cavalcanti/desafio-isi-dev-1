@@ -10,7 +10,7 @@ import java.util.Map;
 @CrossOrigin
 public class HealthController {
 
-    @GetMapping("/api/health")
+    @GetMapping("/health")
     public Map<String, String> health() {
         return Map.of("status", "ok");
     }
