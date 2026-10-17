@@ -32,7 +32,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="none">
+    <Sidebar collapsible="icon" className="border-r-0!">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

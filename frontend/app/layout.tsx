@@ -2,6 +2,7 @@ import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
+import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +30,7 @@ export default function RootLayout({
           <SidebarProvider className="h-svh overflow-hidden">
             <AppSidebar />
             <SidebarInset className="my-2 mr-2 overflow-y-auto rounded-xl border border-border bg-sidebar shadow-sm">
+              <AppHeader />
               {children}
             </SidebarInset>
           </SidebarProvider>
