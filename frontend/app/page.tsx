@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
       <h1 className="text-2xl font-semibold text-foreground">Desafio ISI Dev</h1>
       <p className="text-muted-foreground">
         Backend status: <strong className="text-foreground">{status}</strong>

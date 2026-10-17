@@ -68,6 +68,8 @@
   --color-border: var(--color-zinc-200);
   --color-input: var(--color-zinc-400);
   --color-ring: var(--color-blue-600);
+  --color-primary: var(--color-blue-600);
+  --color-primary-foreground: var(--color-white);
   --color-overlay: color-mix(in oklab, var(--color-black) 50%, transparent);
 
   /* Status */
@@ -117,4 +119,11 @@
 /* KPI: Display/24-32 semibold com números tabulares */
 @utility kpi {
   @apply text-display-kpi tabular-nums;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-sidebar);
+    color: var(--color-sidebar-foreground);
+  }
 }
