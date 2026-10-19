@@ -1,6 +1,9 @@
 package com.app.controller;
 
 import com.app.api.PlayerCreateRequest;
+import com.app.api.PlayerListQuery;
+import com.app.api.PlayerListQueryValidator;
+import com.app.api.PlayerPageResponse;
 import com.app.api.PlayerResponse;
 import com.app.service.PlayerService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,9 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.net.URI;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,9 +25,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final PlayerListQueryValidator queryValidator;
 
-    public PlayerController(PlayerService playerService) {
+    public PlayerController(PlayerService playerService, PlayerListQueryValidator queryValidator) {
         this.playerService = playerService;
+        this.queryValidator = queryValidator;
+    }
+
+    @Operation(summary = "Lista jogadores paginados")
+    @GetMapping
+    public PlayerPageResponse list(
+            @RequestParam(name = "page", required = false) String page,
+            @RequestParam(name = "limit", required = false) String limit) {
+        PlayerListQuery query = queryValidator.parse(page, limit);
+        return playerService.list(query);
     }
 
     @Operation(summary = "Cadastra jogador", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
