@@ -7,6 +7,7 @@ import {
   PlayersTable,
   PlayersTableSkeleton,
 } from "@/components/players/players-table";
+import { PlayersFilters } from "@/components/players/players-filters";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import type {
@@ -35,6 +36,7 @@ function getVisiblePages(currentPage: number, totalPages: number) {
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [clubsById, setClubsById] = useState<Record<number, Club>>({});
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +49,7 @@ export default function PlayersPage() {
     apiFetch<Club[]>("/api/v1/clubs")
       .then((clubs) => {
         if (!isActive) return;
+        setClubs(clubs);
         setClubsById(Object.fromEntries(clubs.map((club) => [club.id, club])));
       })
       .catch(() => undefined);
@@ -107,6 +110,8 @@ export default function PlayersPage() {
           </p>
         </div>
       </div>
+
+      <PlayersFilters clubs={clubs} />
 
       <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border px-4 py-3">
