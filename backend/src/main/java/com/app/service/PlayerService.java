@@ -1,11 +1,14 @@
 package com.app.service;
 
+import com.app.api.ApiException;
 import com.app.api.PageMeta;
+import com.app.api.PathId;
 import com.app.api.PlayerListQuery;
 import com.app.api.PlayerPageResponse;
 import com.app.api.PlayerRequest;
 import com.app.api.PlayerRequestValidator;
 import com.app.api.PlayerResponse;
+import com.app.api.PlayerSort;
 import com.app.mapper.PlayerMapper;
 import com.app.model.NameOrder;
 import com.app.model.PlayerCalculator;
@@ -13,7 +16,6 @@ import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class PlayerService {
-
-    private static final Comparator<Jogador> NAME_ORDER = Comparator
-            .comparing((Jogador jogador) -> NameOrder.sortKey(jogador.nome()))
-            .thenComparing(Jogador::id);
 
     private final PlayerRequestValidator validator;
     private final PlayerMapper mapper;
@@ -49,25 +47,72 @@ public class PlayerService {
     }
 
     @Transactional(readOnly = true)
-    public PlayerPageResponse list(PlayerListQuery query) {
-        List<Jogador> all = new ArrayList<>(jogadores.findByExcluidoEmIsNull());
-        all.sort(NAME_ORDER);
-
-        int totalItems = all.size();
-        int totalPages = totalItems == 0 ? 0 : (totalItems + query.limit() - 1) / query.limit();
-        List<PlayerResponse> data = page(all, query).stream()
-                .map(this::toResponse)
-                .toList();
-        return new PlayerPageResponse(data, new PageMeta(query.page(), query.limit(), totalItems, totalPages));
+    public PlayerResponse get(String rawId) {
+        int id = PathId.parse(rawId);
+        Jogador jogador = jogadores.findByIdAndExcluidoEmIsNull(id)
+                .orElseThrow(() -> ApiException.notFound("Jogador não encontrado."));
+        return toResponse(jogador);
     }
 
-    private List<Jogador> page(List<Jogador> all, PlayerListQuery query) {
+    @Transactional(readOnly = true)
+    public PlayerPageResponse list(PlayerListQuery query) {
+        List<Jogador> all = jogadores.findByExcluidoEmIsNull();
+        if (query.clubId() != null && all.stream().noneMatch(jogador -> query.clubId().equals(jogador.clubeId()))) {
+            throw ApiException.notFound("Clube não encontrado.");
+        }
+        List<PlayerResponse> filtered = all.stream()
+                .map(this::toResponse)
+                .filter(player -> matches(player, query))
+                .sorted(comparator(query))
+                .toList();
+
+        int totalItems = filtered.size();
+        int totalPages = totalItems == 0 ? 0 : (totalItems + query.limit() - 1) / query.limit();
+        return new PlayerPageResponse(page(filtered, query),
+                new PageMeta(query.page(), query.limit(), totalItems, totalPages));
+    }
+
+    private boolean matches(PlayerResponse player, PlayerListQuery query) {
+        if (query.search() != null
+                && !NameOrder.sortKey(player.name()).contains(NameOrder.sortKey(query.search()))) {
+            return false;
+        }
+        if (query.position() != null && !query.position().name().equals(player.position())) {
+            return false;
+        }
+        if (query.condition() != null && !query.condition().name().equals(player.condition())) {
+            return false;
+        }
+        if (query.free() != null && query.free().booleanValue() != (player.clubId() == null)) {
+            return false;
+        }
+        if (query.clubId() != null && !query.clubId().equals(player.clubId())) {
+            return false;
+        }
+        if (player.age() < query.minAge() || player.age() > query.maxAge()) {
+            return false;
+        }
+        return player.marketValue().compareTo(query.minValue()) >= 0
+                && player.marketValue().compareTo(query.maxValue()) <= 0;
+    }
+
+    private Comparator<PlayerResponse> comparator(PlayerListQuery query) {
+        Comparator<PlayerResponse> comparator = (first, second) -> 0;
+        for (PlayerSort sort : query.sort()) {
+            comparator = comparator.thenComparing(sort.comparator());
+        }
+        return comparator
+                .thenComparing((PlayerResponse player) -> NameOrder.sortKey(player.name()))
+                .thenComparing(PlayerResponse::id);
+    }
+
+    private List<PlayerResponse> page(List<PlayerResponse> all, PlayerListQuery query) {
         long from = (long) (query.page() - 1) * query.limit();
         if (from >= all.size()) {
             return List.of();
         }
         int to = (int) Math.min(from + query.limit(), all.size());
-        return all.subList((int) from, to);
+        return List.copyOf(all.subList((int) from, to));
     }
 
     private PlayerResponse toResponse(Jogador jogador) {

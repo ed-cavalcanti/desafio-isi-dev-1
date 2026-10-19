@@ -11,9 +11,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.net.URI;
+import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,13 +34,17 @@ public class PlayerController {
         this.queryValidator = queryValidator;
     }
 
-    @Operation(summary = "Lista jogadores paginados")
+    @Operation(summary = "Lista jogadores com busca, filtros, ordenação e paginação")
     @GetMapping
-    public PlayerPageResponse list(
-            @RequestParam(name = "page", required = false) String page,
-            @RequestParam(name = "limit", required = false) String limit) {
-        PlayerListQuery query = queryValidator.parse(page, limit);
+    public PlayerPageResponse list(@RequestParam Map<String, String> params) {
+        PlayerListQuery query = queryValidator.parse(params);
         return playerService.list(query);
+    }
+
+    @Operation(summary = "Consulta jogador por id")
+    @GetMapping("/{id}")
+    public PlayerResponse get(@PathVariable("id") String id) {
+        return playerService.get(id);
     }
 
     @Operation(summary = "Cadastra jogador", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
