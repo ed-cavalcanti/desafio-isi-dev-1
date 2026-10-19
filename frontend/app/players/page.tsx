@@ -8,6 +8,11 @@ import {
   PlayersTableSkeleton,
 } from "@/components/players/players-table";
 import { PlayersFilters } from "@/components/players/players-filters";
+import {
+  PlayersScopeTabs,
+  type PlayerScope,
+  type ScopeCounts,
+} from "@/components/players/players-scope-tabs";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import type {
@@ -20,6 +25,12 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 3;
+
+const scopeParams: Record<PlayerScope, string> = {
+  all: "",
+  free: "&free=true",
+  club: "&free=false",
+};
 
 function getVisiblePages(currentPage: number, totalPages: number) {
   const count = Math.min(MAX_PAGE_BUTTONS, totalPages);
@@ -38,6 +49,8 @@ export default function PlayersPage() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [clubsById, setClubsById] = useState<Record<number, Club>>({});
+  const [scope, setScope] = useState<PlayerScope>("all");
+  const [counts, setCounts] = useState<ScopeCounts | null>(null);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,11 +75,38 @@ export default function PlayersPage() {
   useEffect(() => {
     let isActive = true;
 
+    Promise.all([
+      apiFetch<PaginatedResponse<Player>>("/api/v1/players?page=1&limit=1"),
+      apiFetch<PaginatedResponse<Player>>(
+        "/api/v1/players?page=1&limit=1&free=true",
+      ),
+      apiFetch<PaginatedResponse<Player>>(
+        "/api/v1/players?page=1&limit=1&free=false",
+      ),
+    ])
+      .then(([all, free, club]) => {
+        if (!isActive) return;
+        setCounts({
+          all: all.meta.total_items,
+          free: free.meta.total_items,
+          club: club.meta.total_items,
+        });
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isActive = false;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    let isActive = true;
+
     setIsLoading(true);
     setError(null);
 
     apiFetch<PaginatedResponse<Player>>(
-      `/api/v1/players?page=${page}&limit=${PAGE_SIZE}`,
+      `/api/v1/players?page=${page}&limit=${PAGE_SIZE}${scopeParams[scope]}`,
     )
       .then((response) => {
         if (!isActive) return;
@@ -90,7 +130,12 @@ export default function PlayersPage() {
     return () => {
       isActive = false;
     };
-  }, [page, reloadKey]);
+  }, [page, reloadKey, scope]);
+
+  const handleScopeChange = (nextScope: PlayerScope) => {
+    setScope(nextScope);
+    setPage(1);
+  };
 
   const totalPages = meta?.total_pages ?? 0;
   const hasPreviousPage = page > 1;
@@ -114,17 +159,12 @@ export default function PlayersPage() {
       <PlayersFilters clubs={clubs} />
 
       <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-heading-card text-foreground">
-              Todos os jogadores
-            </h2>
-            <p className="text-caption text-muted-foreground">
-              {meta
-                ? `${meta.total_items} jogador${meta.total_items === 1 ? "" : "es"} encontrado${meta.total_items === 1 ? "" : "s"}`
-                : "Carregando jogadores..."}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <PlayersScopeTabs
+            value={scope}
+            onValueChange={handleScopeChange}
+            counts={counts}
+          />
         </div>
 
         {isLoading ? (

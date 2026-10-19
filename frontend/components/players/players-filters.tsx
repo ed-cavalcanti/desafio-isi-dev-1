@@ -1,6 +1,15 @@
 "use client";
 
-import { Search } from "lucide-react";
+import {
+  CalendarDays,
+  Coins,
+  HeartPulse,
+  Search,
+  Shield,
+  Shirt,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -77,6 +86,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por posição"
           placeholder="Posição"
+          icon={Shirt}
           value={position}
           onValueChange={setPosition}
           options={positionOptions}
@@ -85,6 +95,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por condição"
           placeholder="Condição"
+          icon={HeartPulse}
           value={condition}
           onValueChange={setCondition}
           options={conditionOptions}
@@ -93,6 +104,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por clube"
           placeholder="Clube"
+          icon={Shield}
           value={club}
           onValueChange={setClub}
           options={clubOptions}
@@ -101,6 +113,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por idade"
           placeholder="Idade"
+          icon={User}
           value={age}
           onValueChange={setAge}
           options={ageOptions}
@@ -109,6 +122,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por valor de mercado"
           placeholder="Valor de mercado"
+          icon={Coins}
           value={value}
           onValueChange={setValue}
           options={valueOptions}
@@ -123,6 +137,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
 type FilterSelectProps = {
   ariaLabel: string;
   placeholder: string;
+  icon: LucideIcon;
   value: string;
   onValueChange: (value: string) => void;
   options: FilterOption[];
@@ -133,6 +148,7 @@ type FilterSelectProps = {
 function FilterSelect({
   ariaLabel,
   placeholder,
+  icon: Icon,
   value,
   onValueChange,
   options,
@@ -151,6 +167,7 @@ function FilterSelect({
         aria-label={ariaLabel}
         className={cn("h-9!", className)}
       >
+        <Icon className="size-4 text-muted-foreground" />
         <SelectValue>
           {(selected: string | null) =>
             selected === ALL || selected === null
@@ -160,9 +177,10 @@ function FilterSelect({
           }
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
+      <SelectContent className="w-auto! min-w-(--anchor-width)">
+        {items.map((item, index) => (
           <SelectItem key={item.value} value={item.value}>
+            {index === 0 && <Icon className="size-4 text-muted-foreground" />}
             {item.label}
           </SelectItem>
         ))}
