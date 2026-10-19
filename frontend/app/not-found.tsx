@@ -10,8 +10,8 @@ export default function NotFound() {
       <p className="text-body text-muted-foreground">
         O endereço acessado não existe.
       </p>
-      <Button nativeButton={false} render={<Link href="/" />}>
-        Voltar para o início
+      <Button nativeButton={false} render={<Link href="/players" />}>
+        Voltar para os jogadores
       </Button>
     </main>
   );

@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Tipografia - Geist (400/500/600); use font-sans, font-medium e font-semibold */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -54,6 +56,7 @@
   --text-caption-medium--font-weight: 500;
 
   /* Base */
+  --color-primary-soft: #EFF6FF;
   --color-background: var(--color-white);
   --color-foreground: var(--color-zinc-950);
   --color-card: var(--color-white);

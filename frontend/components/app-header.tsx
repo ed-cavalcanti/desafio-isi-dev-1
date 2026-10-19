@@ -62,7 +62,7 @@ export function AppHeader() {
   const crumbs = buildCrumbs(pathname);
 
   return (
-    <header data-slot="app-header" className="sticky top-0 z-10 bg-sidebar">
+    <header data-slot="app-header" className="sticky top-0 z-10 bg-background">
       <div className="flex h-14 items-center gap-2 px-4 font-regular">
         <SidebarTrigger className="hover:bg-zinc-200 hover:cursor-pointer" />
         <Separator orientation="vertical" className="mr-1 h-4 self-center!" />
