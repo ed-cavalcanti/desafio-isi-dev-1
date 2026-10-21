@@ -7,14 +7,25 @@ import {
   PlayersTable,
   PlayersTableSkeleton,
 } from "@/components/players/players-table";
+import { PlayersActiveFilters } from "@/components/players/players-active-filters";
 import { PlayersFilters } from "@/components/players/players-filters";
 import {
   PlayersScopeTabs,
   type PlayerScope,
   type ScopeCounts,
 } from "@/components/players/players-scope-tabs";
+import {
+  PlayersSort,
+  type PlayerSort,
+} from "@/components/players/players-sort";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
+import {
+  ALL,
+  initialPlayersFilters,
+  SEARCH_MIN_LENGTH,
+  type PlayersFilterValues,
+} from "@/lib/player-filters";
 import type {
   Club,
   PaginatedResponse,
@@ -25,12 +36,57 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const MAX_PAGE_BUTTONS = 3;
+const SEARCH_DEBOUNCE_MS = 400;
 
-const scopeParams: Record<PlayerScope, string> = {
-  all: "",
-  free: "&free=true",
-  club: "&free=false",
+type PlayersQueryParams = {
+  page: number;
+  scope: PlayerScope;
+  sort: PlayerSort;
+  filters: PlayersFilterValues;
+  search: string;
 };
+
+function buildPlayersQuery({
+  page,
+  scope,
+  sort,
+  filters,
+  search,
+}: PlayersQueryParams) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(PAGE_SIZE),
+    sort,
+  });
+
+  if (scope === "free") params.set("free", "true");
+  if (scope === "club") params.set("free", "false");
+
+  const searchTerm = search.trim();
+  if (searchTerm.length >= SEARCH_MIN_LENGTH) {
+    params.set("search", searchTerm);
+  }
+
+  if (filters.position !== ALL) params.set("position", filters.position);
+  if (filters.condition !== ALL) params.set("condition", filters.condition);
+  if (filters.clubId !== ALL && scope !== "free") {
+    params.set("club_id", filters.clubId);
+  }
+
+  if (filters.ageRange !== ALL) {
+    const [minAge, maxAge] = filters.ageRange.split("-");
+    params.set("min_age", minAge);
+    params.set("max_age", maxAge);
+  }
+
+  if (filters.valueRange !== ALL) {
+    const [minValue, maxValue] = filters.valueRange.split("-");
+    params.set("min_value", minValue);
+    params.set("max_value", maxValue);
+  }
+
+  return `/api/v1/players?${params.toString()}`;
+}
 
 function getVisiblePages(currentPage: number, totalPages: number) {
   const count = Math.min(MAX_PAGE_BUTTONS, totalPages);
@@ -50,6 +106,11 @@ export default function PlayersPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [clubsById, setClubsById] = useState<Record<number, Club>>({});
   const [scope, setScope] = useState<PlayerScope>("all");
+  const [sort, setSort] = useState<PlayerSort>("name");
+  const [filters, setFilters] = useState<PlayersFilterValues>(
+    initialPlayersFilters,
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
   const [counts, setCounts] = useState<ScopeCounts | null>(null);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,13 +161,28 @@ export default function PlayersPage() {
   }, [reloadKey]);
 
   useEffect(() => {
+    const timeout = setTimeout(
+      () => setDebouncedSearch(filters.search),
+      SEARCH_DEBOUNCE_MS,
+    );
+
+    return () => clearTimeout(timeout);
+  }, [filters.search]);
+
+  useEffect(() => {
     let isActive = true;
 
     setIsLoading(true);
     setError(null);
 
     apiFetch<PaginatedResponse<Player>>(
-      `/api/v1/players?page=${page}&limit=${PAGE_SIZE}${scopeParams[scope]}`,
+      buildPlayersQuery({
+        page,
+        scope,
+        sort,
+        filters,
+        search: debouncedSearch,
+      }),
     )
       .then((response) => {
         if (!isActive) return;
@@ -130,10 +206,35 @@ export default function PlayersPage() {
     return () => {
       isActive = false;
     };
-  }, [page, reloadKey, scope]);
+  }, [
+    debouncedSearch,
+    filters.ageRange,
+    filters.clubId,
+    filters.condition,
+    filters.position,
+    filters.valueRange,
+    page,
+    reloadKey,
+    scope,
+    sort,
+  ]);
 
   const handleScopeChange = (nextScope: PlayerScope) => {
     setScope(nextScope);
+    setPage(1);
+
+    if (nextScope === "free" && filters.clubId !== ALL) {
+      setFilters((current) => ({ ...current, clubId: ALL }));
+    }
+  };
+
+  const handleFiltersChange = (nextFilters: PlayersFilterValues) => {
+    setFilters(nextFilters);
+    setPage(1);
+  };
+
+  const handleSortChange = (nextSort: PlayerSort) => {
+    setSort(nextSort);
     setPage(1);
   };
 
@@ -156,7 +257,18 @@ export default function PlayersPage() {
         </div>
       </div>
 
-      <PlayersFilters clubs={clubs} />
+      <PlayersFilters
+        clubs={clubs}
+        values={filters}
+        onChange={handleFiltersChange}
+        clubFilterDisabled={scope === "free"}
+      />
+
+      <PlayersActiveFilters
+        values={filters}
+        clubs={clubs}
+        onChange={handleFiltersChange}
+      />
 
       <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -165,6 +277,7 @@ export default function PlayersPage() {
             onValueChange={handleScopeChange}
             counts={counts}
           />
+          <PlayersSort value={sort} onValueChange={handleSortChange} />
         </div>
 
         {isLoading ? (

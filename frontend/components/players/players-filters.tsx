@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CalendarDays,
   Coins,
   HeartPulse,
   Search,
@@ -10,7 +9,6 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,53 +19,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCondition, formatPosition } from "@/lib/format";
-import type { Club, PlayerCondition, Position } from "@/lib/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  ALL,
+  ageOptions,
+  conditionOptions,
+  positionOptions,
+  valueOptions,
+  type FilterOption,
+  type PlayersFilterValues,
+} from "@/lib/player-filters";
+import type { Club } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const ALL = "all";
-
-const positionOptions = (
-  ["GOL", "ZAG", "LAT", "MEI", "ATA"] as Position[]
-).map((position) => ({ value: position, label: formatPosition(position) }));
-
-const conditionOptions = (
-  ["APTO", "MAL_CONDICIONADO", "DOENTE"] as PlayerCondition[]
-).map((condition) => ({ value: condition, label: formatCondition(condition) }));
-
-const ageOptions = [
-  { value: "16-21", label: "16 a 21 anos" },
-  { value: "22-25", label: "22 a 25 anos" },
-  { value: "26-30", label: "26 a 30 anos" },
-  { value: "31-35", label: "31 a 35 anos" },
-  { value: "36-45", label: "36 a 45 anos" },
-];
-
-const valueOptions = [
-  { value: "0-50", label: "Até 50,00" },
-  { value: "50-100", label: "50,00 a 100,00" },
-  { value: "100-200", label: "100,00 a 200,00" },
-  { value: "200-550", label: "Acima de 200,00" },
-];
-
-type FilterOption = { value: string; label: string };
+const FREE_CLUB_FILTER_WARNING =
+  '"Livres" não combina com o filtro por clubes.';
 
 type PlayersFiltersProps = {
   clubs: Club[];
+  values: PlayersFilterValues;
+  onChange: (values: PlayersFilterValues) => void;
+  clubFilterDisabled?: boolean;
 };
 
-export function PlayersFilters({ clubs }: PlayersFiltersProps) {
-  const [search, setSearch] = useState("");
-  const [position, setPosition] = useState(ALL);
-  const [condition, setCondition] = useState(ALL);
-  const [club, setClub] = useState(ALL);
-  const [age, setAge] = useState(ALL);
-  const [value, setValue] = useState(ALL);
+export function PlayersFilters({
+  clubs,
+  values,
+  onChange,
+  clubFilterDisabled = false,
+}: PlayersFiltersProps) {
+  const updateFilter = <Key extends keyof PlayersFilterValues>(
+    key: Key,
+    value: PlayersFilterValues[Key],
+  ) => {
+    onChange({ ...values, [key]: value });
+  };
 
   const clubOptions: FilterOption[] = clubs.map((item) => ({
     value: String(item.id),
     label: item.name,
   }));
+
+  const clubFilter = (
+    <FilterSelect
+      ariaLabel="Filtrar por clube"
+      placeholder="Clube"
+      title="Clube"
+      icon={Shield}
+      value={values.clubId}
+      onValueChange={(value) => updateFilter("clubId", value)}
+      options={clubOptions}
+      allLabel="Todos os clubes"
+      disabled={clubFilterDisabled}
+    />
+  );
 
   return (
     <Card className="[--card-spacing:--spacing(2)]">
@@ -75,8 +84,8 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <div className="relative min-w-56 flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            value={values.search}
+            onChange={(event) => updateFilter("search", event.target.value)}
             placeholder="Buscar jogador pelo nome"
             aria-label="Buscar jogador pelo nome"
             className="h-9! pl-8"
@@ -88,8 +97,10 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
           placeholder="Posição"
           title="Posição"
           icon={Shirt}
-          value={position}
-          onValueChange={setPosition}
+          value={values.position}
+          onValueChange={(value) =>
+            updateFilter("position", value as PlayersFilterValues["position"])
+          }
           options={positionOptions}
           allLabel="Todas as posições"
         />
@@ -98,28 +109,35 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
           placeholder="Condição"
           title="Condição"
           icon={HeartPulse}
-          value={condition}
-          onValueChange={setCondition}
+          value={values.condition}
+          onValueChange={(value) =>
+            updateFilter(
+              "condition",
+              value as PlayersFilterValues["condition"],
+            )
+          }
           options={conditionOptions}
           allLabel="Todas as condições"
         />
-        <FilterSelect
-          ariaLabel="Filtrar por clube"
-          placeholder="Clube"
-          title="Clube"
-          icon={Shield}
-          value={club}
-          onValueChange={setClub}
-          options={clubOptions}
-          allLabel="Todos os clubes"
-        />
+
+        {clubFilterDisabled ? (
+          <Tooltip>
+            <TooltipTrigger render={<span className="inline-flex" />}>
+              {clubFilter}
+            </TooltipTrigger>
+            <TooltipContent>{FREE_CLUB_FILTER_WARNING}</TooltipContent>
+          </Tooltip>
+        ) : (
+          clubFilter
+        )}
+
         <FilterSelect
           ariaLabel="Filtrar por idade"
           placeholder="Idade"
           title="Idade"
           icon={User}
-          value={age}
-          onValueChange={setAge}
+          value={values.ageRange}
+          onValueChange={(value) => updateFilter("ageRange", value)}
           options={ageOptions}
           allLabel="Qualquer idade"
         />
@@ -128,8 +146,8 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
           placeholder="Valor de mercado"
           title="Valor"
           icon={Coins}
-          value={value}
-          onValueChange={setValue}
+          value={values.valueRange}
+          onValueChange={(value) => updateFilter("valueRange", value)}
           options={valueOptions}
           allLabel="Qualquer valor"
           className="min-w-44"
@@ -148,6 +166,7 @@ type FilterSelectProps = {
   onValueChange: (value: string) => void;
   options: FilterOption[];
   allLabel: string;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -160,6 +179,7 @@ function FilterSelect({
   onValueChange,
   options,
   allLabel,
+  disabled = false,
   className,
 }: FilterSelectProps) {
   const items = [{ value: ALL, label: allLabel }, ...options];
@@ -169,10 +189,11 @@ function FilterSelect({
       value={value}
       onValueChange={(nextValue) => onValueChange(nextValue as string)}
       items={items}
+      disabled={disabled}
     >
       <SelectTrigger
         aria-label={ariaLabel}
-        className={cn("h-9!", className)}
+        className={cn("h-9!", className, disabled && "pointer-events-none")}
       >
         <Icon className="size-4 text-muted-foreground" />
         <SelectValue>
