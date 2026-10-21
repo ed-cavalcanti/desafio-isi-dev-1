@@ -86,6 +86,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por posição"
           placeholder="Posição"
+          title="Posição"
           icon={Shirt}
           value={position}
           onValueChange={setPosition}
@@ -95,6 +96,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por condição"
           placeholder="Condição"
+          title="Condição"
           icon={HeartPulse}
           value={condition}
           onValueChange={setCondition}
@@ -104,6 +106,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por clube"
           placeholder="Clube"
+          title="Clube"
           icon={Shield}
           value={club}
           onValueChange={setClub}
@@ -113,6 +116,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por idade"
           placeholder="Idade"
+          title="Idade"
           icon={User}
           value={age}
           onValueChange={setAge}
@@ -122,6 +126,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
         <FilterSelect
           ariaLabel="Filtrar por valor de mercado"
           placeholder="Valor de mercado"
+          title="Valor"
           icon={Coins}
           value={value}
           onValueChange={setValue}
@@ -137,6 +142,7 @@ export function PlayersFilters({ clubs }: PlayersFiltersProps) {
 type FilterSelectProps = {
   ariaLabel: string;
   placeholder: string;
+  title: string;
   icon: LucideIcon;
   value: string;
   onValueChange: (value: string) => void;
@@ -148,6 +154,7 @@ type FilterSelectProps = {
 function FilterSelect({
   ariaLabel,
   placeholder,
+  title,
   icon: Icon,
   value,
   onValueChange,
@@ -169,12 +176,15 @@ function FilterSelect({
       >
         <Icon className="size-4 text-muted-foreground" />
         <SelectValue>
-          {(selected: string | null) =>
-            selected === ALL || selected === null
-              ? placeholder
-              : (items.find((item) => item.value === selected)?.label ??
-                placeholder)
-          }
+          {(selected: string | null) => {
+            const selectedOption = items.find((item) => item.value === selected);
+
+            if (selected === ALL || selected === null || !selectedOption) {
+              return placeholder;
+            }
+
+            return `${title}: ${selectedOption.label}`;
+          }}
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="w-auto! min-w-(--anchor-width)">
