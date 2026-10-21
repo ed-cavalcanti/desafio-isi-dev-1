@@ -23,7 +23,7 @@ const positionLabels: Record<Position, string> = {
   GOL: "Goleiro",
   ZAG: "Zagueiro",
   LAT: "Lateral",
-  MEI: "Meia",
+  MEI: "Meio-campo",
   ATA: "Atacante",
 };
 

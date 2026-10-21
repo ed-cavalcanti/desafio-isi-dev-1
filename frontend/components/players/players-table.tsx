@@ -144,7 +144,12 @@ export function PlayersTable({ players, clubsById }: PlayersTableProps) {
                       {club.name}
                     </div>
                   ) : player.club_id === null ? (
-                    <span className="text-muted-foreground">Livre</span>
+                    <Badge
+                      variant="default"
+                      className="border-0 bg-secondary text-caption-medium"
+                    >
+                      Livre
+                    </Badge>
                   ) : (
                     `Clube #${player.club_id}`
                   )}

@@ -57,6 +57,7 @@
 
   /* Base */
   --color-primary-soft: #EFF6FF;
+  --color-secondary: #F4F4F5;
   --color-background: var(--color-white);
   --color-foreground: var(--color-zinc-950);
   --color-card: var(--color-white);

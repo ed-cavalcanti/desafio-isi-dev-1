@@ -1,12 +1,16 @@
 "use client";
 
-import { AlertCircle, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
-import {
-  PlayersTable,
-  PlayersTableSkeleton,
-} from "@/components/players/players-table";
+import { PlayerCreateDialog } from "@/components/players/player-create-dialog";
+import { PlayerCreatedDialog } from "@/components/players/player-created-dialog";
 import { PlayersActiveFilters } from "@/components/players/players-active-filters";
 import { PlayersFilters } from "@/components/players/players-filters";
 import {
@@ -18,6 +22,10 @@ import {
   PlayersSort,
   type PlayerSort,
 } from "@/components/players/players-sort";
+import {
+  PlayersTable,
+  PlayersTableSkeleton,
+} from "@/components/players/players-table";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import {
@@ -116,6 +124,8 @@ export default function PlayersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createdPlayer, setCreatedPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -219,6 +229,12 @@ export default function PlayersPage() {
     sort,
   ]);
 
+  const handlePlayerCreated = (player: Player) => {
+    setPage(1);
+    setReloadKey((key) => key + 1);
+    setCreatedPlayer(player);
+  };
+
   const handleScopeChange = (nextScope: PlayerScope) => {
     setScope(nextScope);
     setPage(1);
@@ -245,16 +261,29 @@ export default function PlayersPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 bg-background px-8 py-4 md:py-6">
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-12 bg-primary-soft border border-primary rounded-xl flex items-center justify-center">
-          <Users className="text-primary" />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-primary-soft border border-primary rounded-xl flex items-center justify-center">
+            <Users className="text-primary" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-heading-page text-foreground font-semibold">
+              Jogadores
+            </h1>
+            <p className="text-body-sm text-muted-foreground">
+              Cadastre jogadores, acompanhe os indicadores e compre os que estão
+              livres.
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-heading-page text-foreground font-semibold">Jogadores</h1>
-          <p className="text-body-sm text-muted-foreground">
-            Cadastre jogadores, acompanhe os indicadores e compre os que estão livres.
-          </p>
-        </div>
+        <Button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="hover:cursor-pointer h-9"
+        >
+          <Plus />
+          Adicionar jogador
+        </Button>
       </div>
 
       <PlayersFilters
@@ -293,7 +322,7 @@ export default function PlayersPage() {
             </div>
             <Button
               variant="outline"
-              size="sm"
+              className="h-9 hover:cursor-pointer"
               onClick={() => setReloadKey((key) => key + 1)}
             >
               Tentar novamente
@@ -355,6 +384,19 @@ export default function PlayersPage() {
           </div>
         ) : null}
       </section>
+
+      <PlayerCreateDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCreated={handlePlayerCreated}
+      />
+
+      <PlayerCreatedDialog
+        player={createdPlayer}
+        onOpenChange={(open) => {
+          if (!open) setCreatedPlayer(null);
+        }}
+      />
     </main>
   );
 }
