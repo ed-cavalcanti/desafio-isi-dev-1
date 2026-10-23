@@ -4,13 +4,15 @@ import java.math.BigDecimal;
 
 import org.springframework.stereotype.Component;
 
+import com.app.model.Condition;
 import com.app.model.NameText;
 import com.app.model.PlayerAttributes;
 import com.app.model.Position;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Validação do corpo de POST /players
+ * Validação do corpo dos endpoints de jogador: cadastro, edição (PUT) e
+ * alteração de condição (PATCH).
  */
 @Component
 public class PlayerRequestValidator {
@@ -29,9 +31,7 @@ public class PlayerRequestValidator {
     private static final int AGE_FOR_POTENTIAL_EQUAL = 33;
 
     public PlayerRequest create(JsonNode body) {
-        if (body == null || !body.isObject()) {
-            throw ApiException.badRequest("Corpo da requisição deve ser um objeto JSON.");
-        }
+        requireObject(body);
         String name = name(body);
         Position position = position(body);
         Integer agility = integer(body, "agility");
@@ -43,10 +43,48 @@ public class PlayerRequestValidator {
         Integer defending = integer(body, "defending");
         Integer physical = integer(body, "physical");
         Integer potential = integer(body, "potential");
-        limits(agility, age, pace, shooting, passing, dribbling, defending, physical, potential);
+        ageAndAgility(agility, age);
         PlayerAttributes attributes = new PlayerAttributes(pace, shooting, passing, dribbling, defending,
                 physical, potential);
+        attributeLimits(age, attributes);
         return new PlayerRequest(name, position, agility, age, attributes);
+    }
+
+    /**
+     * PUT /players/{id}: só nome, posição, agilidade e idade; os indicadores e o
+     * potencial enviados são ignorados (V7).
+     */
+    public PlayerUpdateRequest update(JsonNode body) {
+        requireObject(body);
+        String name = name(body);
+        Position position = position(body);
+        Integer agility = integer(body, "agility");
+        Integer age = integer(body, "age");
+        ageAndAgility(agility, age);
+        return new PlayerUpdateRequest(name, position, agility, age);
+    }
+
+    /**
+     * PATCH /players/{id}/condition: apenas a condição; os demais campos são
+     * ignorados (V7).
+     */
+    public Condition condition(JsonNode body) {
+        requireObject(body);
+        JsonNode node = body.get("condition");
+        if (node == null || node.isNull() || !node.isTextual()) {
+            throw ApiException.badRequest("O campo condition é obrigatório e deve ser um texto.");
+        }
+        try {
+            return Condition.valueOf(node.asText());
+        } catch (IllegalArgumentException exception) {
+            throw ApiException.badRequest("O campo condition deve ser APTO, MAL_CONDICIONADO ou DOENTE.");
+        }
+    }
+
+    private void requireObject(JsonNode body) {
+        if (body == null || !body.isObject()) {
+            throw ApiException.badRequest("Corpo da requisição deve ser um objeto JSON.");
+        }
     }
 
     private String name(JsonNode body) {
@@ -103,8 +141,7 @@ public class PlayerRequestValidator {
         }
     }
 
-    private void limits(Integer agility, Integer age, Integer pace, Integer shooting, Integer passing,
-            Integer dribbling, Integer defending, Integer physical, Integer potential) {
+    private void ageAndAgility(Integer agility, Integer age) {
         if (age < AGE_MIN || age > AGE_MAX) {
             throw ApiException.badRequest("O campo age deve estar entre 16 e 45.");
         }
@@ -114,25 +151,30 @@ public class PlayerRequestValidator {
         if (age >= AGE_FOR_AGILITY_LIMIT && agility > AGILITY_MAX_FOR_OVER_34) {
             throw ApiException.badRequest("Para jogadores com 35 anos ou mais, o campo agility deve ser no máximo 85.");
         }
-        limitAttribute("pace", pace);
-        limitAttribute("shooting", shooting);
-        limitAttribute("passing", passing);
-        limitAttribute("dribbling", dribbling);
-        limitAttribute("defending", defending);
-        limitAttribute("physical", physical);
-        int attributesSum = pace + shooting + passing + dribbling + defending + physical;
+    }
+
+    private void attributeLimits(Integer age, PlayerAttributes attributes) {
+        limitAttribute("pace", attributes.pace());
+        limitAttribute("shooting", attributes.shooting());
+        limitAttribute("passing", attributes.passing());
+        limitAttribute("dribbling", attributes.dribbling());
+        limitAttribute("defending", attributes.defending());
+        limitAttribute("physical", attributes.physical());
+        int attributesSum = attributes.pace() + attributes.shooting() + attributes.passing()
+                + attributes.dribbling() + attributes.defending() + attributes.physical();
         if (attributesSum > ATTRIBUTES_SUM_MAX) {
             throw ApiException.badRequest("A soma dos seis atributos não pode passar de 480.");
         }
-        int maxAttribute = Math.max(Math.max(Math.max(pace, shooting), Math.max(passing, dribbling)),
-                Math.max(defending, physical));
-        if (potential < 1 || potential > POTENTIAL_MAX) {
+        int maxAttribute = Math.max(Math.max(Math.max(attributes.pace(), attributes.shooting()),
+                Math.max(attributes.passing(), attributes.dribbling())),
+                Math.max(attributes.defending(), attributes.physical()));
+        if (attributes.potential() < 1 || attributes.potential() > POTENTIAL_MAX) {
             throw ApiException.badRequest("O campo potential deve estar entre 1 e 99.");
         }
-        if (potential < maxAttribute) {
+        if (attributes.potential() < maxAttribute) {
             throw ApiException.badRequest("O campo potential deve ser maior ou igual ao maior dos seis atributos.");
         }
-        if (age >= AGE_FOR_POTENTIAL_EQUAL && potential != maxAttribute) {
+        if (age >= AGE_FOR_POTENTIAL_EQUAL && attributes.potential() != maxAttribute) {
             throw ApiException.badRequest(
                     "Para jogadores com 33 anos ou mais, o campo potential deve ser igual ao maior dos seis atributos.");
         }

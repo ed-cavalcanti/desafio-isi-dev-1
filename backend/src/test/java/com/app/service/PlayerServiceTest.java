@@ -250,4 +250,104 @@ class PlayerServiceTest {
         assertThat(assertThrows(ApiException.class, () -> service.get("abc")).status()).isEqualTo(404);
         assertThat(assertThrows(ApiException.class, () -> service.get("2147483648")).status()).isEqualTo(404);
     }
+
+    private ObjectNode updateBody(String name, String position, int agility, int age) {
+        ObjectNode body = JSON.createObjectNode();
+        body.put("name", name);
+        body.put("position", position);
+        body.put("agility", agility);
+        body.put("age", age);
+        body.put("pace", 10);
+        body.put("potential", 1);
+        return body;
+    }
+
+    @Test
+    @DisplayName("edita nome, posição, agilidade e idade mantendo indicadores e valor base")
+    void updatesPlayerFields() {
+        Jogador jogador = player(1, "Ana Lima", "MEI", 50, 25, Condition.APTO, null, new BigDecimal("36.00"));
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(jogador));
+        when(jogadores.save(any(Jogador.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PlayerResponse response = service.update("1", updateBody("Bia  Reis", "ATA", 60, 26));
+
+        assertThat(response.name()).isEqualTo("Bia Reis");
+        assertThat(response.position()).isEqualTo("ATA");
+        assertThat(response.agility()).isEqualTo(60);
+        assertThat(response.age()).isEqualTo(26);
+        assertThat(response.baseValue()).isEqualByComparingTo("36.00");
+        assertThat(response.pace()).isEqualTo(68);
+        assertThat(response.potential()).isEqualTo(86);
+    }
+
+    @Test
+    @DisplayName("jogador com clube não muda de posição e a idade não diminui")
+    void rejectsInvalidUpdates() {
+        Jogador contracted = player(1, "Ana Lima", "MEI", 50, 25, Condition.APTO, 1, new BigDecimal("36.00"));
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(contracted));
+
+        ApiException position = assertThrows(ApiException.class,
+                () -> service.update("1", updateBody("Ana Lima", "ATA", 50, 26)));
+        assertThat(position.status()).isEqualTo(409);
+
+        ApiException age = assertThrows(ApiException.class,
+                () -> service.update("1", updateBody("Ana Lima", "MEI", 50, 24)));
+        assertThat(age.status()).isEqualTo(409);
+    }
+
+    @Test
+    @DisplayName("edição valida o corpo e responde 404 para jogador inexistente")
+    void validatesUpdateBodyAndUnknownPlayers() {
+        assertThat(assertThrows(ApiException.class,
+                () -> service.update("1", updateBody("Ana Lima", "MEI", 50, 0))).status()).isEqualTo(400);
+        when(jogadores.findByIdAndExcluidoEmIsNull(2)).thenReturn(Optional.empty());
+        assertThat(assertThrows(ApiException.class,
+                () -> service.update("2", updateBody("Ana Lima", "MEI", 50, 25))).status()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("altera a condição física com as regras de transição")
+    void changesCondition() {
+        Jogador doente = player(1, "Ana Lima", "MEI", 50, 25, Condition.DOENTE, null, new BigDecimal("36.00"));
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(doente));
+        when(jogadores.save(any(Jogador.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ObjectNode apto = JSON.createObjectNode();
+        apto.put("condition", "APTO");
+        apto.put("name", "Ignorado");
+        ApiException exception = assertThrows(ApiException.class, () -> service.changeCondition("1", apto));
+        assertThat(exception.status()).isEqualTo(409);
+
+        ObjectNode sameCondition = JSON.createObjectNode();
+        sameCondition.put("condition", "DOENTE");
+        assertThat(service.changeCondition("1", sameCondition).condition()).isEqualTo("DOENTE");
+
+        ObjectNode malCondicionado = JSON.createObjectNode();
+        malCondicionado.put("condition", "MAL_CONDICIONADO");
+        assertThat(service.changeCondition("1", malCondicionado).condition()).isEqualTo("MAL_CONDICIONADO");
+
+        ObjectNode invalid = JSON.createObjectNode();
+        invalid.put("condition", "apto");
+        assertThat(assertThrows(ApiException.class, () -> service.changeCondition("1", invalid)).status())
+                .isEqualTo(400);
+    }
+
+    @Test
+    @DisplayName("exclui logicamente apenas jogadores livres")
+    void deletesOnlyFreePlayers() {
+        Jogador free = player(1, "Ana Lima", "MEI", 50, 25, Condition.APTO, null, new BigDecimal("36.00"));
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(free));
+        when(jogadores.save(any(Jogador.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.delete("1");
+
+        assertThat(free.excluidoEm()).isNotNull();
+
+        Jogador contracted = player(2, "Bia Reis", "MEI", 50, 25, Condition.APTO, 1, new BigDecimal("36.00"));
+        when(jogadores.findByIdAndExcluidoEmIsNull(2)).thenReturn(Optional.of(contracted));
+
+        ApiException exception = assertThrows(ApiException.class, () -> service.delete("2"));
+        assertThat(exception.status()).isEqualTo(409);
+        assertThat(contracted.excluidoEm()).isNull();
+    }
 }

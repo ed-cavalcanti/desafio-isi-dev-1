@@ -178,4 +178,12 @@ public class Jogador {
     public void atualizadoEm(LocalDateTime atualizadoEm) {
         this.atualizadoEm = atualizadoEm;
     }
+
+    public LocalDateTime excluidoEm() {
+        return excluidoEm;
+    }
+
+    public void excluidoEm(LocalDateTime excluidoEm) {
+        this.excluidoEm = excluidoEm;
+    }
 }

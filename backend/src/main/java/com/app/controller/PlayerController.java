@@ -14,9 +14,12 @@ import java.net.URI;
 import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,5 +58,24 @@ public class PlayerController {
     public ResponseEntity<PlayerResponse> create(@RequestBody JsonNode body) {
         PlayerResponse created = playerService.create(body);
         return ResponseEntity.created(URI.create("/api/v1/players/" + created.id())).body(created);
+    }
+
+    @Operation(summary = "Edita nome, posição, agilidade e idade do jogador")
+    @PutMapping("/{id}")
+    public PlayerResponse update(@PathVariable("id") String id, @RequestBody JsonNode body) {
+        return playerService.update(id, body);
+    }
+
+    @Operation(summary = "Altera a condição física do jogador")
+    @PatchMapping("/{id}/condition")
+    public PlayerResponse changeCondition(@PathVariable("id") String id, @RequestBody JsonNode body) {
+        return playerService.changeCondition(id, body);
+    }
+
+    @Operation(summary = "Exclui logicamente um jogador livre")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+        playerService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
