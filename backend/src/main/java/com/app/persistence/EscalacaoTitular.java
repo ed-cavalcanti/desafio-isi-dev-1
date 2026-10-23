@@ -6,12 +6,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * Titular da escalação, mapeado na tabela escalacao_titulares (RN19).
  */
 @Entity
-@Table(name = "escalacao_titulares")
+@Table(name = "escalacao_titulares", uniqueConstraints = @UniqueConstraint(columnNames = { "escalacao_id",
+        "jogador_id" }))
 public class EscalacaoTitular {
 
     @Id
