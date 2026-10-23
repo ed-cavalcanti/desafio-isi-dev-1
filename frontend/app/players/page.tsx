@@ -297,6 +297,11 @@ export default function PlayersPage() {
       ? (clubsById[viewingPlayer.club_id] ?? null)
       : null;
 
+  const conditionPlayerClub =
+    conditionPlayer && conditionPlayer.club_id !== null
+      ? (clubsById[conditionPlayer.club_id] ?? null)
+      : null;
+
   const deletingPlayerClub =
     deletingPlayer && deletingPlayer.club_id !== null
       ? (clubsById[deletingPlayer.club_id] ?? null)
@@ -463,6 +468,7 @@ export default function PlayersPage() {
 
       <PlayerConditionDialog
         player={conditionPlayer}
+        club={conditionPlayerClub}
         onOpenChange={(open) => {
           if (!open) setConditionPlayer(null);
         }}

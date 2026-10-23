@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Lock } from "lucide-react";
+import { AlertCircle, AlertTriangle, Lock } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { PlayerConditionBadge } from "@/components/players/player-condition-badge";
@@ -17,8 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/lib/api";
-import { formatCoins, formatCondition, formatPosition, getInitials } from "@/lib/format";
-import type { Player, PlayerCondition } from "@/lib/types";
+import {
+  formatCoins,
+  formatCondition,
+  formatPosition,
+  getInitials,
+} from "@/lib/format";
+import type { Club, Lineup, Player, PlayerCondition } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const CONDITION_OPTIONS: {
@@ -42,17 +47,20 @@ const CONDITION_OPTIONS: {
 
 type PlayerConditionDialogProps = {
   player: Player | null;
+  club: Club | null;
   onOpenChange: (open: boolean) => void;
   onUpdated: (player: Player) => void;
 };
 
 export function PlayerConditionDialog({
   player,
+  club,
   onOpenChange,
   onUpdated,
 }: PlayerConditionDialogProps) {
   const [condition, setCondition] = useState<PlayerCondition | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isTitular, setIsTitular] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toastManager = useToast();
 
@@ -61,6 +69,32 @@ export function PlayerConditionDialog({
 
     setCondition(player.condition);
     setApiError(null);
+  }, [player]);
+
+  useEffect(() => {
+    const clubId = player?.club_id;
+    if (clubId === null || clubId === undefined) {
+      setIsTitular(false);
+      return;
+    }
+
+    let isActive = true;
+    setIsTitular(false);
+
+    apiFetch<Lineup>(`/api/v1/clubs/${clubId}/lineup`)
+      .then((lineup) => {
+        if (!isActive) return;
+        setIsTitular(
+          lineup.players.some((titular) => titular.id === player?.id),
+        );
+      })
+      .catch(() => {
+        if (isActive) setIsTitular(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, [player]);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -106,12 +140,14 @@ export function PlayerConditionDialog({
   };
 
   const isRecoveryBlocked = player?.condition === "DOENTE";
+  const showsTitularWarning =
+    isTitular && condition === "DOENTE" && player?.condition !== "DOENTE";
 
   return (
     <Dialog open={player !== null} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={!isSubmitting}
-        className="gap-0 p-0 sm:max-w-md"
+        className="gap-0 p-0 sm:max-w-md min-w-130"
       >
         {player ? (
           <>
@@ -219,7 +255,10 @@ export function PlayerConditionDialog({
                           </span>
                           {isDisabled ? (
                             <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted-foreground">
-                              <Lock className="size-3 shrink-0" aria-hidden="true" />
+                              <Lock
+                                className="size-3 shrink-0"
+                                aria-hidden="true"
+                              />
                               De Doente não passa direto para Apto.
                             </span>
                           ) : null}
@@ -228,6 +267,25 @@ export function PlayerConditionDialog({
                     );
                   })}
                 </fieldset>
+
+                {showsTitularWarning ? (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 rounded-lg border border-warning-soft-border bg-warning-soft px-3 py-2 text-body-sm text-warning-soft-foreground"
+                  >
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-body-sm-medium font-semibold">
+                        {player.name} é titular.
+                      </p>
+                      <p className="text-body-sm">
+                        Ao passar a Doente, ele sai da escalação, e o{" "}
+                        {club?.name ?? "clube"} só volta a jogar partidas depois
+                        de escalar de novo os 5 titulares.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
 
                 {apiError ? (
                   <div
