@@ -97,10 +97,10 @@ public class ClubService {
                 .orElseThrow(() -> ApiException.notFound("Clube não encontrado."));
         LocalDateTime now = BrasiliaTime.now();
         List<SquadPlayerResponse> players = squad(clube.id()).stream()
-                .map(jogador -> new SquadPlayerResponse(playerMapper.toResponse(jogador), contract(jogador, now)))
+                .map(jogador -> SquadPlayerResponse.of(playerMapper.toResponse(jogador), contract(jogador, now)))
                 .toList();
         BigDecimal squadValue = players.stream()
-                .map(player -> player.player().marketValue())
+                .map(SquadPlayerResponse::marketValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new ClubDetailsResponse(clube.id(), clube.nome(), clube.sigla(), clube.caixa(), squadValue,
                 clube.caixa().add(squadValue), players);
@@ -119,8 +119,8 @@ public class ClubService {
             return null;
         }
         int daysRemaining = MarketCalculator.daysRemaining(contrato.fidelidadeAte(), now);
-        return new ContractResponse(BrasiliaTime.format(contrato.fidelidadeAte()), daysRemaining,
-                MarketCalculator.penaltyPercent(daysRemaining), contrato.valorCompra());
+        return new ContractResponse(contrato.valorCompra(), BrasiliaTime.format(contrato.fidelidadeAte()),
+                daysRemaining, MarketCalculator.penaltyPercent(daysRemaining));
     }
 
     private Map<Integer, BigDecimal> squadValues() {

@@ -17,7 +17,6 @@ import com.app.mapper.PlayerMapper;
 import com.app.model.Condition;
 import com.app.persistence.ClubeRepository;
 import com.app.persistence.EscalacaoRepository;
-import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,15 +48,12 @@ class PlayerServiceTest {
     @Mock
     private EscalacaoRepository escalacoes;
 
-    @Mock
-    private EscalacaoTitularRepository titulares;
-
     private PlayerService service;
 
     @BeforeEach
     void setUp() {
         LineupService lineups = new LineupService(new LineupRequestValidator(), mapper, clubes, jogadores,
-                escalacoes, titulares);
+                escalacoes);
         service = new PlayerService(validator, mapper, clubes, jogadores, lineups);
     }
 
@@ -333,7 +329,7 @@ class PlayerServiceTest {
         ObjectNode sameCondition = JSON.createObjectNode();
         sameCondition.put("condition", "DOENTE");
         assertThat(service.changeCondition("1", sameCondition).condition()).isEqualTo("DOENTE");
-        verify(titulares).deleteByJogadorId(1);
+        verify(escalacoes).deleteByJogadorId(1);
 
         ObjectNode malCondicionado = JSON.createObjectNode();
         malCondicionado.put("condition", "MAL_CONDICIONADO");

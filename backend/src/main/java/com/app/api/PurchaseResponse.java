@@ -2,10 +2,13 @@ package com.app.api;
 
 import java.math.BigDecimal;
 
+import com.app.model.TransactionType;
+
 /**
- * Compra realizada nas respostas da API: o valor pago, a taxa, o custo total, o
- * contrato criado e o novo caixa (RN12 e RN13).
+ * Compra realizada, no formato da transação gravada (RN12, RN13 e RN17).
  */
-public record PurchaseResponse(Integer playerId, Integer clubId, BigDecimal value, BigDecimal fee,
-        BigDecimal totalCost, String loyaltyUntil, BigDecimal cash) {
+public record PurchaseResponse(Integer id, Integer clubId, Integer playerId, String playerName,
+        TransactionType type, BigDecimal value, BigDecimal fee, BigDecimal penalty, BigDecimal profit,
+        BigDecimal cashChange, String createdAt, ContractCreatedResponse contract, BigDecimal clubCash,
+        BigDecimal totalCost) {
 }

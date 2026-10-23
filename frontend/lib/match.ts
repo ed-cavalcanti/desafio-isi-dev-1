@@ -128,7 +128,7 @@ export type MatchDuelGroup = {
 function createStarter(duelist: Duelist, line: number | null): MatchStarter {
   return {
     playerId: duelist.player_id,
-    name: duelist.name,
+    name: duelist.player_name,
     position: duelist.position,
     condition: duelist.condition,
     line,

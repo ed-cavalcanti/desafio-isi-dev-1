@@ -57,10 +57,7 @@ function joinNames(names: string[]) {
 
 export function ClubLineupTab({ clubId, players }: ClubLineupTabProps) {
   const toastManager = useToast();
-  const squadPlayers = useMemo(
-    () => players.map(({ player }) => player),
-    [players],
-  );
+  const squadPlayers = useMemo(() => players.map((player) => player), [players]);
   const playersById = useMemo(
     () => new Map(squadPlayers.map((player) => [player.id, player])),
     [squadPlayers],

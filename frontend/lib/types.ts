@@ -32,38 +32,53 @@ export type Club = {
 };
 
 export type Purchase = {
-  player_id: number;
+  id: number;
   club_id: number;
+  player_id: number;
+  player_name: string;
+  type: "COMPRA";
   value: number;
   fee: number;
+  penalty: number;
+  profit: null;
+  cash_change: number;
+  created_at: string;
+  contract: {
+    purchase_value: number;
+    loyalty_until: string;
+    status: "ATIVO";
+  };
+  club_cash: number;
   total_cost: number;
-  loyalty_until: string;
-  cash: number;
 };
 
 export type Sale = {
-  player_id: number;
+  id: number;
   club_id: number;
-  purchase_value: number;
-  sale_value: number;
-  days_remaining: number;
-  penalty_percent: number;
+  player_id: number;
+  player_name: string;
+  type: "VENDA";
+  value: number;
+  fee: number;
   penalty: number;
   profit: number;
-  commission: number;
-  credit: number;
-  cash: number;
+  cash_change: number;
+  created_at: string;
+  purchase_value: number;
+  remaining_days: number;
+  penalty_rate: number;
+  contract_status: "RESCINDIDO" | "ENCERRADO";
+  club_cash: number;
 };
 
 export type Contract = {
   loyalty_until: string;
-  days_remaining: number;
-  penalty_percent: number;
+  remaining_days: number;
+  penalty_rate: number;
   purchase_value: number;
 };
 
-export type SquadPlayer = {
-  player: Player;
+export type SquadPlayer = Player & {
   contract: Contract;
 };
 
@@ -131,15 +146,23 @@ export type DuelAttribute =
 
 export type Duelist = {
   player_id: number;
-  name: string;
+  player_name: string;
   position: Position;
   condition: PlayerCondition;
   attribute: DuelAttribute;
   value: number;
 };
 
+export type MatchSide = {
+  club_id: number;
+  club_name: string;
+  formation: Formation;
+  goals: number;
+};
+
 export type MatchDuel = {
   order: number;
+  attacking_club_id: number;
   attacker: Duelist;
   defender: Duelist;
   goal: boolean;
@@ -149,6 +172,8 @@ export type Match = MatchSummary & {
   home_formation: Formation;
   away_formation: Formation;
   duels: MatchDuel[];
+  home: MatchSide;
+  away: MatchSide;
 };
 
 export type Standing = {

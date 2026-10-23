@@ -18,6 +18,7 @@ import com.app.api.MatchQuery;
 import com.app.api.MatchRequest;
 import com.app.api.MatchRequestValidator;
 import com.app.api.MatchResponse;
+import com.app.api.MatchSideResponse;
 import com.app.api.MatchSummaryResponse;
 import com.app.api.PathId;
 import com.app.api.PlayerResponse;
@@ -77,7 +78,7 @@ public class MatchService {
         Partida partida = partidas.save(new Partida(mandante.id(), visitante.id(), simulation.homeGoals(),
                 simulation.awayGoals(), simulation.result(), homeLineup.formation(), awayLineup.formation(), now));
         List<DuelResponse> duels = simulation.duels().stream()
-                .map(duel -> toDuelo(partida.id(), duel))
+                .map(duel -> toDuelo(partida, duel))
                 .map(duelos::save)
                 .map(this::toDuelResponse)
                 .toList();
@@ -139,10 +140,11 @@ public class MatchService {
                 .toList();
     }
 
-    private Duelo toDuelo(Integer partidaId, DuelSnapshot duel) {
+    private Duelo toDuelo(Partida partida, DuelSnapshot duel) {
         DuelistSnapshot attacker = duel.attacker();
         DuelistSnapshot defender = duel.defender();
-        return new Duelo(partidaId, duel.order(),
+        int attackingClubId = duel.order() <= 3 ? partida.mandanteClubeId() : partida.visitanteClubeId();
+        return new Duelo(partida.id(), attackingClubId, duel.order(),
                 attacker.playerId(), attacker.name(), attacker.position(), attacker.condition(),
                 attributeName(attacker.attribute()), attacker.value(),
                 defender.playerId(), defender.name(), defender.position(), defender.condition(),
@@ -157,7 +159,7 @@ public class MatchService {
         DuelistResponse defender = new DuelistResponse(duelo.defensorJogadorId(), duelo.defensorNome(),
                 duelo.defensorPosicao().name(), duelo.defensorCondicao().name(), duelo.defensorAtributo(),
                 duelo.defensorValor());
-        return new DuelResponse(duelo.ordem(), attacker, defender, duelo.gol());
+        return new DuelResponse(duelo.ordem(), duelo.clubeAtacanteId(), attacker, defender, duelo.gol());
     }
 
     private String attributeName(Attribute attribute) {
@@ -167,13 +169,23 @@ public class MatchService {
     private MatchSummaryResponse toSummary(Partida partida, String homeName, String awayName) {
         return new MatchSummaryResponse(partida.id(), partida.mandanteClubeId(), homeName, partida.visitanteClubeId(),
                 awayName, partida.golsMandante(), partida.golsVisitante(), partida.resultado(),
-                BrasiliaTime.format(partida.jogadoEm()));
+                BrasiliaTime.format(partida.jogadoEm()), homeSide(partida, homeName), awaySide(partida, awayName));
     }
 
     private MatchResponse toResponse(Partida partida, String homeName, String awayName, List<DuelResponse> duels) {
         return new MatchResponse(partida.id(), partida.mandanteClubeId(), homeName, partida.visitanteClubeId(),
                 awayName, partida.golsMandante(), partida.golsVisitante(), partida.resultado(),
                 BrasiliaTime.format(partida.jogadoEm()), partida.formacaoMandante(), partida.formacaoVisitante(),
-                duels);
+                duels, homeSide(partida, homeName), awaySide(partida, awayName));
+    }
+
+    private MatchSideResponse homeSide(Partida partida, String homeName) {
+        return new MatchSideResponse(partida.mandanteClubeId(), homeName, partida.formacaoMandante(),
+                partida.golsMandante());
+    }
+
+    private MatchSideResponse awaySide(Partida partida, String awayName) {
+        return new MatchSideResponse(partida.visitanteClubeId(), awayName, partida.formacaoVisitante(),
+                partida.golsVisitante());
     }
 }

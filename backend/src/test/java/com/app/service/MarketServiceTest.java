@@ -37,7 +37,6 @@ import com.app.persistence.ClubeRepository;
 import com.app.persistence.Contrato;
 import com.app.persistence.ContratoRepository;
 import com.app.persistence.EscalacaoRepository;
-import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.app.persistence.Transacao;
@@ -67,15 +66,12 @@ class MarketServiceTest {
     @Mock
     private EscalacaoRepository escalacoes;
 
-    @Mock
-    private EscalacaoTitularRepository titulares;
-
     private MarketService service;
 
     @BeforeEach
     void setUp() {
         LineupService lineups = new LineupService(new LineupRequestValidator(), playerMapper, clubes, jogadores,
-                escalacoes, titulares);
+                escalacoes);
         service = new MarketService(validator, playerMapper, clubes, jogadores, contratos, transacoes, lineups);
     }
 
@@ -129,14 +125,20 @@ class MarketServiceTest {
         when(jogadores.countByClubeId(1)).thenReturn(2L);
         when(jogadores.save(any(Jogador.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(clubes.save(any(Clube.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PurchaseResponse response = service.purchase("1", body(1));
 
+        assertThat(response.playerName()).isEqualTo("Meia Lua");
+        assertThat(response.type()).isEqualTo(TransactionType.COMPRA);
         assertThat(response.value()).isEqualByComparingTo("36.00");
         assertThat(response.fee()).isEqualByComparingTo("1.80");
         assertThat(response.totalCost()).isEqualByComparingTo("37.80");
-        assertThat(response.cash()).isEqualByComparingTo("262.20");
-        assertThat(response.loyaltyUntil()).matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}-03:00");
+        assertThat(response.cashChange()).isEqualByComparingTo("-37.80");
+        assertThat(response.clubCash()).isEqualByComparingTo("262.20");
+        assertThat(response.contract().status()).isEqualTo(ContractStatus.ATIVO);
+        assertThat(response.contract().loyaltyUntil())
+                .matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}-03:00");
 
         ArgumentCaptor<Contrato> contract = ArgumentCaptor.forClass(Contrato.class);
         verify(contratos).save(contract.capture());
@@ -160,6 +162,7 @@ class MarketServiceTest {
     void chargesNoFeeUpToThirty() {
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(player(1, null, "30.00")));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PurchaseResponse response = service.purchase("1", body(1));
 
@@ -172,6 +175,7 @@ class MarketServiceTest {
     void enforcesFiftyPercentCashLimit() {
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(player(1, null, "47.62")));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "100.00")));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThat(service.purchase("1", body(1)).totalCost()).isEqualByComparingTo("50.00");
 
@@ -230,10 +234,12 @@ class MarketServiceTest {
         body.put("loyalty_until", future.format(DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm")) + "-03:00");
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(player(1, null, "36.00")));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PurchaseResponse response = service.purchase("1", body);
 
-        assertThat(response.loyaltyUntil()).startsWith(future.format(DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm")));
+        assertThat(response.contract().loyaltyUntil())
+                .startsWith(future.format(DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm")));
     }
 
     private Contrato contract(int jogadorId, String purchaseValue, long loyaltyDays) {
@@ -249,21 +255,25 @@ class MarketServiceTest {
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(jogador));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
         when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(contrato));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SaleResponse response = service.sale("1");
 
+        assertThat(response.playerName()).isEqualTo("Meia Lua");
+        assertThat(response.type()).isEqualTo(TransactionType.VENDA);
         assertThat(response.purchaseValue()).isEqualByComparingTo("37.00");
-        assertThat(response.saleValue()).isEqualByComparingTo("40.00");
-        assertThat(response.daysRemaining()).isEqualTo(100);
-        assertThat(response.penaltyPercent()).isEqualTo(10);
+        assertThat(response.value()).isEqualByComparingTo("40.00");
+        assertThat(response.remainingDays()).isEqualTo(100);
+        assertThat(response.penaltyRate()).isEqualTo(10);
         assertThat(response.penalty()).isEqualByComparingTo("4.00");
         assertThat(response.profit()).isEqualByComparingTo("3.00");
-        assertThat(response.commission()).isEqualByComparingTo("0.30");
-        assertThat(response.credit()).isEqualByComparingTo("35.70");
-        assertThat(response.cash()).isEqualByComparingTo("335.70");
+        assertThat(response.fee()).isEqualByComparingTo("0.30");
+        assertThat(response.cashChange()).isEqualByComparingTo("35.70");
+        assertThat(response.contractStatus()).isEqualTo(ContractStatus.RESCINDIDO);
+        assertThat(response.clubCash()).isEqualByComparingTo("335.70");
         assertThat(jogador.clubeId()).isNull();
         assertThat(contrato.status()).isEqualTo(ContractStatus.RESCINDIDO);
-        verify(titulares).deleteByJogadorId(1);
+        verify(escalacoes).deleteByJogadorId(1);
 
         ArgumentCaptor<Transacao> transaction = ArgumentCaptor.forClass(Transacao.class);
         verify(transacoes).save(transaction.capture());
@@ -284,14 +294,15 @@ class MarketServiceTest {
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(jogador));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
         when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(contrato));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SaleResponse response = service.sale("1");
 
-        assertThat(response.daysRemaining()).isZero();
+        assertThat(response.remainingDays()).isZero();
         assertThat(response.penalty()).isEqualByComparingTo("0.00");
         assertThat(response.profit()).isEqualByComparingTo("0.00");
-        assertThat(response.commission()).isEqualByComparingTo("0.00");
-        assertThat(response.credit()).isEqualByComparingTo("25.00");
+        assertThat(response.fee()).isEqualByComparingTo("0.00");
+        assertThat(response.cashChange()).isEqualByComparingTo("25.00");
         assertThat(contrato.status()).isEqualTo(ContractStatus.ENCERRADO);
     }
 
@@ -303,12 +314,13 @@ class MarketServiceTest {
         when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(expensive));
         when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
         when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(cheapBuy));
+        when(transacoes.save(any(Transacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SaleResponse capped = service.sale("1");
 
         assertThat(capped.penalty()).isEqualByComparingTo("10.00");
-        assertThat(capped.commission()).isEqualByComparingTo("2.00");
-        assertThat(capped.credit()).isEqualByComparingTo("63.00");
+        assertThat(capped.fee()).isEqualByComparingTo("2.00");
+        assertThat(capped.cashChange()).isEqualByComparingTo("63.00");
 
         Jogador devalued = player(2, 1, "42.50");
         Contrato expensiveBuy = contract(2, "50.00", 200);
@@ -319,8 +331,8 @@ class MarketServiceTest {
 
         assertThat(loss.penalty()).isEqualByComparingTo("8.50");
         assertThat(loss.profit()).isEqualByComparingTo("-7.50");
-        assertThat(loss.commission()).isEqualByComparingTo("0.00");
-        assertThat(loss.credit()).isEqualByComparingTo("34.00");
+        assertThat(loss.fee()).isEqualByComparingTo("0.00");
+        assertThat(loss.cashChange()).isEqualByComparingTo("34.00");
     }
 
     @Test

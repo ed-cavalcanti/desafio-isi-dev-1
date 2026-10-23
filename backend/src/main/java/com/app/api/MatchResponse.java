@@ -10,5 +10,6 @@ import com.app.model.MatchOutcome;
  */
 public record MatchResponse(Integer id, Integer homeClubId, String homeClubName, Integer awayClubId,
         String awayClubName, Integer homeGoals, Integer awayGoals, MatchOutcome result, String playedAt,
-        String homeFormation, String awayFormation, List<DuelResponse> duels) {
+        String homeFormation, String awayFormation, List<DuelResponse> duels, MatchSideResponse home,
+        MatchSideResponse away) {
 }

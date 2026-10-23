@@ -39,8 +39,6 @@ import com.app.persistence.Duelo;
 import com.app.persistence.DueloRepository;
 import com.app.persistence.Escalacao;
 import com.app.persistence.EscalacaoRepository;
-import com.app.persistence.EscalacaoTitular;
-import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.app.persistence.Partida;
@@ -63,9 +61,6 @@ class MatchServiceTest {
     private EscalacaoRepository escalacoes;
 
     @Mock
-    private EscalacaoTitularRepository titulares;
-
-    @Mock
     private PartidaRepository partidas;
 
     @Mock
@@ -76,7 +71,7 @@ class MatchServiceTest {
     @BeforeEach
     void setUp() {
         LineupService lineups = new LineupService(new LineupRequestValidator(), new PlayerMapper(), clubes,
-                jogadores, escalacoes, titulares);
+                jogadores, escalacoes);
         service = new MatchService(new MatchRequestValidator(), lineups, clubes, partidas, duelos);
     }
 
@@ -101,37 +96,32 @@ class MatchServiceTest {
         return jogador;
     }
 
-    private void stubTeam(int clubId, String clubName, int escalacaoId, Jogador... players) {
+    private void stubTeam(int clubId, String clubName, Jogador... players) {
         Clube clube = new Clube();
         clube.nome(clubName);
         clube.nomeBusca(clubName.toLowerCase());
         clube.sigla("C" + clubId + "C");
         clube.caixa(new BigDecimal("300.00"));
+        clube.formacao("2-1-1");
         ReflectionTestUtils.setField(clube, "id", clubId);
         when(clubes.findById(clubId)).thenReturn(Optional.of(clube));
 
-        Escalacao escalacao = new Escalacao();
-        escalacao.clubeId(clubId);
-        escalacao.formacao("2-1-1");
-        ReflectionTestUtils.setField(escalacao, "id", escalacaoId);
-        when(escalacoes.findByClubeId(clubId)).thenReturn(Optional.of(escalacao));
-
-        List<EscalacaoTitular> rows = new ArrayList<>();
+        List<Escalacao> rows = new ArrayList<>();
         for (Jogador player : players) {
-            rows.add(new EscalacaoTitular(escalacaoId, player.id()));
+            rows.add(new Escalacao(clubId, player.id(), java.time.LocalDateTime.now()));
             when(jogadores.findByIdAndExcluidoEmIsNull(player.id())).thenReturn(Optional.of(player));
         }
-        when(titulares.findByEscalacaoId(escalacaoId)).thenReturn(rows);
+        when(escalacoes.findByClubeId(clubId)).thenReturn(rows);
     }
 
     private void stubExampleTeams() {
-        stubTeam(1, "Águias FC", 7,
+        stubTeam(1, "Águias FC",
                 jogador(30, "Rui Prado", Position.GOL, Condition.APTO, 50, 50, 50, 77),
                 jogador(32, "Téo Brandão", Position.ZAG, Condition.APTO, 50, 50, 50, 84),
                 jogador(31, "Davi Lins", Position.LAT, Condition.MAL_CONDICIONADO, 50, 50, 74, 66),
                 jogador(33, "Lauro Neves", Position.MEI, Condition.APTO, 50, 82, 50, 50),
                 jogador(34, "Otto Rangel", Position.ATA, Condition.APTO, 75, 50, 50, 50));
-        stubTeam(2, "Delta FC", 8,
+        stubTeam(2, "Delta FC",
                 jogador(40, "Ivo Teles", Position.GOL, Condition.APTO, 50, 50, 50, 72),
                 jogador(41, "Hugo Vaz", Position.ZAG, Condition.APTO, 50, 50, 50, 84),
                 jogador(42, "Lino Matos", Position.LAT, Condition.APTO, 50, 50, 79, 63),
@@ -185,7 +175,7 @@ class MatchServiceTest {
     @Test
     @DisplayName("recusa partida sem escalação completa")
     void rejectsIncompleteLineups() {
-        stubTeam(1, "Águias FC", 7,
+        stubTeam(1, "Águias FC",
                 jogador(30, "Rui Prado", Position.GOL, Condition.APTO, 50, 50, 50, 77),
                 jogador(32, "Téo Brandão", Position.ZAG, Condition.APTO, 50, 50, 50, 84),
                 jogador(31, "Davi Lins", Position.LAT, Condition.APTO, 50, 50, 74, 66),
@@ -198,7 +188,7 @@ class MatchServiceTest {
         delta.caixa(new BigDecimal("300.00"));
         ReflectionTestUtils.setField(delta, "id", 2);
         when(clubes.findById(2)).thenReturn(Optional.of(delta));
-        when(escalacoes.findByClubeId(2)).thenReturn(Optional.empty());
+        when(escalacoes.findByClubeId(2)).thenReturn(List.of());
 
         ApiException exception = assertThrows(ApiException.class, () -> service.play(body()));
 
@@ -226,8 +216,8 @@ class MatchServiceTest {
     }
 
     private Duelo duelo(int ordem, String attackerName) {
-        return new Duelo(15, ordem, 30 + ordem, attackerName, Position.ATA, Condition.APTO, "shooting", 75,
-                40, "Ivo Teles", Position.GOL, Condition.APTO, "defending", 72, ordem == 1);
+        return new Duelo(15, ordem <= 3 ? 1 : 2, ordem, 30 + ordem, attackerName, Position.ATA, Condition.APTO,
+                "shooting", 75, 40, "Ivo Teles", Position.GOL, Condition.APTO, "defending", 72, ordem == 1);
     }
 
     @Test
@@ -277,7 +267,9 @@ class MatchServiceTest {
         assertThat(response.homeClubName()).isEqualTo("Alfa FC");
         assertThat(response.awayClubName()).isEqualTo("Beta FC");
         assertThat(response.duels()).extracting(DuelResponse::order).containsExactly(1, 2);
-        assertThat(response.duels().get(0).attacker().name()).isEqualTo("Otto Rangel");
+        assertThat(response.duels().get(0).attacker().playerName()).isEqualTo("Otto Rangel");
+        assertThat(response.duels().get(0).attackingClubId()).isEqualTo(1);
+        assertThat(response.duels().get(1).attackingClubId()).isEqualTo(1);
         assertThat(response.duels().get(0).goal()).isTrue();
         assertThat(response.duels().get(1).goal()).isFalse();
         assertThat(assertThrows(ApiException.class, () -> service.get("abc")).status()).isEqualTo(404);

@@ -32,34 +32,33 @@ public class Contrato {
     @Column(name = "clube_id")
     private Integer clubeId;
 
-    @Column(name = "valor_compra", precision = 8, scale = 2)
+    @Column(name = "valor_compra", precision = 6, scale = 2)
     private BigDecimal valorCompra;
 
     @Column(name = "fidelidade_ate")
     private LocalDateTime fidelidadeAte;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 12)
+    @Column(name = "situacao", length = 12)
     private ContractStatus status;
 
-    @Column(name = "criado_em")
-    private LocalDateTime criadoEm;
+    @Column(name = "iniciado_em")
+    private LocalDateTime iniciadoEm;
 
-    @Column(name = "atualizado_em")
-    private LocalDateTime atualizadoEm;
+    @Column(name = "encerrado_em")
+    private LocalDateTime encerradoEm;
 
     public Contrato() {
     }
 
     public Contrato(Integer jogadorId, Integer clubeId, BigDecimal valorCompra, LocalDateTime fidelidadeAte,
-            ContractStatus status, LocalDateTime criadoEm) {
+            ContractStatus status, LocalDateTime iniciadoEm) {
         this.jogadorId = jogadorId;
         this.clubeId = clubeId;
         this.valorCompra = valorCompra;
         this.fidelidadeAte = fidelidadeAte;
         this.status = status;
-        this.criadoEm = criadoEm;
-        this.atualizadoEm = criadoEm;
+        this.iniciadoEm = iniciadoEm;
     }
 
     public Integer id() {
@@ -86,11 +85,19 @@ public class Contrato {
         return status;
     }
 
-    public void status(ContractStatus status) {
+    /**
+     * RN15.4 e RN16: encerra o contrato na venda, com o momento do encerramento.
+     */
+    public void encerrar(ContractStatus status, LocalDateTime momento) {
         this.status = status;
+        this.encerradoEm = momento;
     }
 
-    public void atualizadoEm(LocalDateTime atualizadoEm) {
-        this.atualizadoEm = atualizadoEm;
+    public LocalDateTime iniciadoEm() {
+        return iniciadoEm;
+    }
+
+    public LocalDateTime encerradoEm() {
+        return encerradoEm;
     }
 }

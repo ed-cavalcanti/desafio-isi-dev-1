@@ -33,8 +33,11 @@ public class Clube {
     @Column(name = "sigla", length = 3)
     private String sigla;
 
-    @Column(name = "caixa", precision = 8, scale = 2)
+    @Column(name = "caixa", precision = 10, scale = 2)
     private BigDecimal caixa;
+
+    @Column(name = "formacao", length = 5)
+    private String formacao;
 
     @Column(name = "criado_em")
     private LocalDateTime criadoEm;
@@ -73,6 +76,14 @@ public class Clube {
 
     public void caixa(BigDecimal caixa) {
         this.caixa = caixa;
+    }
+
+    public String formacao() {
+        return formacao;
+    }
+
+    public void formacao(String formacao) {
+        this.formacao = formacao;
     }
 
     public void criadoEm(LocalDateTime criadoEm) {

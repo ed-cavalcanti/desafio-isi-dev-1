@@ -67,7 +67,7 @@ export function ClubSquadTable({ players, onSell }: ClubSquadTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {players.map(({ player, contract }) => (
+          {players.map((player) => (
             <TableRow key={player.id}>
               <TableCell className="lg:min-w-52">
                 <div className="flex items-center gap-3">
@@ -94,24 +94,24 @@ export function ClubSquadTable({ players, onSell }: ClubSquadTableProps) {
                 {formatCoins(player.market_value)}
               </TableCell>
               <TableCell className="text-right tabular-nums text-muted-foreground lg:min-w-28">
-                {formatCoins(contract.purchase_value)}
+                {formatCoins(player.contract.purchase_value)}
               </TableCell>
               <TableCell className="tabular-nums lg:min-w-36">
                 <div className="flex flex-col">
                   <span className="text-body-sm text-foreground">
-                    {formatDate(contract.loyalty_until)}
+                    {formatDate(player.contract.loyalty_until)}
                   </span>
                   <span className="text-caption-xs text-muted-foreground">
-                    {formatTime(contract.loyalty_until)}
+                    {formatTime(player.contract.loyalty_until)}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="text-right tabular-nums lg:min-w-28">
-                {contract.days_remaining}
+                {player.contract.remaining_days}
               </TableCell>
               <TableCell className="lg:min-w-20">
                 <ContractPenaltyBadge
-                  penaltyPercent={contract.penalty_percent}
+                  penaltyPercent={player.contract.penalty_rate}
                 />
               </TableCell>
               <TableCell className="text-right lg:min-w-28">
@@ -119,7 +119,7 @@ export function ClubSquadTable({ players, onSell }: ClubSquadTableProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => onSell({ player, contract })}
+                  onClick={() => onSell(player)}
                   className="h-8 hover:cursor-pointer"
                 >
                   <HandCoins />

@@ -114,7 +114,7 @@ export function PlayerPurchaseSuccess({
           <Separator />
           <PurchaseSummaryRow
             label="Fim da fidelidade"
-            value={`${formatDate(purchase.loyalty_until)}, ${formatTime(purchase.loyalty_until)}`}
+            value={`${formatDate(purchase.contract.loyalty_until)}, ${formatTime(purchase.contract.loyalty_until)}`}
           />
           <Separator />
           <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -130,7 +130,7 @@ export function PlayerPurchaseSuccess({
           <Separator />
           <PurchaseSummaryRow
             label={`Novo caixa do ${clubName}`}
-            value={formatCoins(purchase.cash)}
+            value={formatCoins(purchase.club_cash)}
             emphasis
           />
         </div>

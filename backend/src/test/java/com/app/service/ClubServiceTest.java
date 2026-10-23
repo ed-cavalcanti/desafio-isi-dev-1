@@ -19,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.app.api.ApiException;
 import com.app.api.ClubDetailsResponse;
+import com.app.api.SquadPlayerResponse;
 import com.app.api.ClubRequest;
 import com.app.api.ClubRequestValidator;
 import com.app.api.ClubResponse;
@@ -214,13 +215,13 @@ class ClubServiceTest {
         assertThat(response.cash()).isEqualByComparingTo("300.00");
         assertThat(response.squadValue()).isEqualByComparingTo("90.00");
         assertThat(response.netWorth()).isEqualByComparingTo("390.00");
-        assertThat(response.players()).extracting(player -> player.player().id())
+        assertThat(response.players()).extracting(SquadPlayerResponse::id)
                 .containsExactly(1, 2, 5);
-        assertThat(response.players().get(0).contract().daysRemaining()).isEqualTo(30);
-        assertThat(response.players().get(0).contract().penaltyPercent()).isEqualTo(5);
+        assertThat(response.players().get(0).contract().remainingDays()).isEqualTo(30);
+        assertThat(response.players().get(0).contract().penaltyRate()).isEqualTo(5);
         assertThat(response.players().get(0).contract().loyaltyUntil())
                 .matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}-03:00");
-        assertThat(response.players().get(1).contract().penaltyPercent()).isEqualTo(20);
+        assertThat(response.players().get(1).contract().penaltyRate()).isEqualTo(20);
     }
 
     @Test

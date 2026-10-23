@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.app.api.ApiException;
+import com.app.api.ContractCreatedResponse;
 import com.app.api.PathId;
 import com.app.api.PurchaseRequest;
 import com.app.api.PurchaseRequestValidator;
@@ -88,10 +89,13 @@ public class MarketService {
         jogadores.save(jogador);
         contratos.save(new Contrato(jogador.id(), clube.id(), marketValue, request.loyaltyUntil(),
                 ContractStatus.ATIVO, now));
-        transacoes.save(new Transacao(clube.id(), jogador.id(), jogador.nome(), TransactionType.COMPRA,
-                marketValue, fee, BigDecimal.ZERO.setScale(2), null, totalCost.negate(), now));
-        return new PurchaseResponse(jogador.id(), clube.id(), marketValue, fee, totalCost,
-                BrasiliaTime.format(request.loyaltyUntil()), clube.caixa());
+        Transacao transaction = transacoes.save(new Transacao(clube.id(), jogador.id(), jogador.nome(),
+                TransactionType.COMPRA, marketValue, fee, BigDecimal.ZERO.setScale(2), null, totalCost.negate(), now));
+        ContractCreatedResponse contract = new ContractCreatedResponse(marketValue,
+                BrasiliaTime.format(request.loyaltyUntil()), ContractStatus.ATIVO);
+        return new PurchaseResponse(transaction.id(), clube.id(), jogador.id(), jogador.nome(),
+                TransactionType.COMPRA, marketValue, fee, BigDecimal.ZERO.setScale(2), null, totalCost.negate(),
+                BrasiliaTime.format(now), contract, clube.caixa(), totalCost);
     }
 
     /**
@@ -116,18 +120,18 @@ public class MarketService {
         BigDecimal profit = marketValue.subtract(contrato.valorCompra());
         BigDecimal commission = MarketCalculator.commission(profit);
         BigDecimal credit = marketValue.subtract(penalty).subtract(commission);
-        contrato.status(penalty.signum() == 0 ? ContractStatus.ENCERRADO : ContractStatus.RESCINDIDO);
-        contrato.atualizadoEm(now);
+        contrato.encerrar(penalty.signum() == 0 ? ContractStatus.ENCERRADO : ContractStatus.RESCINDIDO, now);
         contratos.save(contrato);
         clube.caixa(clube.caixa().add(credit));
         clubes.save(clube);
         jogador.clubeId(null);
         jogadores.save(jogador);
         lineups.removeTitular(jogador.id());
-        transacoes.save(new Transacao(clube.id(), jogador.id(), jogador.nome(), TransactionType.VENDA,
-                marketValue, commission, penalty, profit, credit, now));
-        return new SaleResponse(jogador.id(), clube.id(), contrato.valorCompra(), marketValue, daysRemaining,
-                penaltyPercent, penalty, profit, commission, credit, clube.caixa());
+        Transacao transaction = transacoes.save(new Transacao(clube.id(), jogador.id(), jogador.nome(),
+                TransactionType.VENDA, marketValue, commission, penalty, profit, credit, now));
+        return new SaleResponse(transaction.id(), clube.id(), jogador.id(), jogador.nome(), TransactionType.VENDA,
+                marketValue, commission, penalty, profit, credit, BrasiliaTime.format(now), contrato.valorCompra(),
+                daysRemaining, penaltyPercent, contrato.status(), clube.caixa());
     }
 
     private Jogador findPlayer(int playerId) {

@@ -4,54 +4,50 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
- * Escalação do clube, mapeada na tabela escalacoes: a formação e os titulares
- * guardados em escalacao_titulares (RN19).
+ * Titular da escalação do clube, mapeado na tabela escalacoes com a chave
+ * composta (clube_id, jogador_id) e um jogador em no máximo uma escalação
+ * (RN19).
  */
 @Entity
-@Table(name = "escalacoes")
+@Table(name = "escalacoes", uniqueConstraints = @UniqueConstraint(columnNames = "jogador_id"))
+@IdClass(EscalacaoId.class)
 public class Escalacao {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Integer id;
-
     @Column(name = "clube_id")
     private Integer clubeId;
 
-    @Column(name = "formacao", length = 5)
-    private String formacao;
+    @Id
+    @Column(name = "jogador_id")
+    private Integer jogadorId;
 
-    @Column(name = "atualizado_em")
-    private LocalDateTime atualizadoEm;
+    @Column(name = "criado_em")
+    private LocalDateTime criadoEm;
 
-    public Integer id() {
-        return id;
+    public Escalacao() {
+    }
+
+    public Escalacao(Integer clubeId, Integer jogadorId, LocalDateTime criadoEm) {
+        this.clubeId = clubeId;
+        this.jogadorId = jogadorId;
+        this.criadoEm = criadoEm;
     }
 
     public Integer clubeId() {
         return clubeId;
     }
 
-    public void clubeId(Integer clubeId) {
-        this.clubeId = clubeId;
+    public Integer jogadorId() {
+        return jogadorId;
     }
 
-    public String formacao() {
-        return formacao;
-    }
-
-    public void formacao(String formacao) {
-        this.formacao = formacao;
-    }
-
-    public void atualizadoEm(LocalDateTime atualizadoEm) {
-        this.atualizadoEm = atualizadoEm;
+    public LocalDateTime criadoEm() {
+        return criadoEm;
     }
 }

@@ -2,11 +2,14 @@ package com.app.api;
 
 import java.math.BigDecimal;
 
+import com.app.model.ContractStatus;
+import com.app.model.TransactionType;
+
 /**
- * Venda realizada nas respostas da API: valor de compra, valor de venda, dias
- * restantes, multa, lucro, comissão, crédito e novo caixa (RN15 e RN16).
+ * Venda realizada, no formato da transação gravada (RN15, RN16 e RN17).
  */
-public record SaleResponse(Integer playerId, Integer clubId, BigDecimal purchaseValue, BigDecimal saleValue,
-        Integer daysRemaining, Integer penaltyPercent, BigDecimal penalty, BigDecimal profit,
-        BigDecimal commission, BigDecimal credit, BigDecimal cash) {
+public record SaleResponse(Integer id, Integer clubId, Integer playerId, String playerName,
+        TransactionType type, BigDecimal value, BigDecimal fee, BigDecimal penalty, BigDecimal profit,
+        BigDecimal cashChange, String createdAt, BigDecimal purchaseValue, Integer remainingDays,
+        Integer penaltyRate, ContractStatus contractStatus, BigDecimal clubCash) {
 }

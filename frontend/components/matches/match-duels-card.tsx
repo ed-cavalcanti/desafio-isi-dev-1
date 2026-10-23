@@ -49,7 +49,7 @@ function DuelistInfo({
   return (
     <div className="flex flex-col">
       <span className="text-body-sm-medium text-foreground">
-        {duelist.name}
+        {duelist.player_name}
       </span>
       <span className="text-caption-xs text-muted-foreground">
         {line === null

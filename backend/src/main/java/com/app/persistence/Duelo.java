@@ -28,6 +28,9 @@ public class Duelo {
     @Column(name = "partida_id")
     private Integer partidaId;
 
+    @Column(name = "clube_atacante_id")
+    private Integer clubeAtacanteId;
+
     @Column(name = "ordem")
     private Integer ordem;
 
@@ -77,11 +80,12 @@ public class Duelo {
     public Duelo() {
     }
 
-    public Duelo(Integer partidaId, Integer ordem, Integer atacanteJogadorId, String atacanteNome,
-            Position atacantePosicao, Condition atacanteCondicao, String atacanteAtributo, Integer atacanteValor,
-            Integer defensorJogadorId, String defensorNome, Position defensorPosicao, Condition defensorCondicao,
-            String defensorAtributo, Integer defensorValor, Boolean gol) {
+    public Duelo(Integer partidaId, Integer clubeAtacanteId, Integer ordem, Integer atacanteJogadorId,
+            String atacanteNome, Position atacantePosicao, Condition atacanteCondicao, String atacanteAtributo,
+            Integer atacanteValor, Integer defensorJogadorId, String defensorNome, Position defensorPosicao,
+            Condition defensorCondicao, String defensorAtributo, Integer defensorValor, Boolean gol) {
         this.partidaId = partidaId;
+        this.clubeAtacanteId = clubeAtacanteId;
         this.ordem = ordem;
         this.atacanteJogadorId = atacanteJogadorId;
         this.atacanteNome = atacanteNome;
@@ -104,6 +108,10 @@ public class Duelo {
 
     public Integer partidaId() {
         return partidaId;
+    }
+
+    public Integer clubeAtacanteId() {
+        return clubeAtacanteId;
     }
 
     public Integer ordem() {

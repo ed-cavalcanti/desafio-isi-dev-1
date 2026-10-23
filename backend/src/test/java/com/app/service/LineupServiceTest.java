@@ -3,11 +3,13 @@ package com.app.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,8 +33,6 @@ import com.app.persistence.Clube;
 import com.app.persistence.ClubeRepository;
 import com.app.persistence.Escalacao;
 import com.app.persistence.EscalacaoRepository;
-import com.app.persistence.EscalacaoTitular;
-import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,14 +54,11 @@ class LineupServiceTest {
     @Mock
     private EscalacaoRepository escalacoes;
 
-    @Mock
-    private EscalacaoTitularRepository titulares;
-
     private LineupService service;
 
     @BeforeEach
     void setUp() {
-        service = new LineupService(validator, playerMapper, clubes, jogadores, escalacoes, titulares);
+        service = new LineupService(validator, playerMapper, clubes, jogadores, escalacoes);
     }
 
     private Clube club(int id) {
@@ -94,14 +91,6 @@ class LineupServiceTest {
         return jogador;
     }
 
-    private Escalacao escalacao(int id, int clubId, String formation) {
-        Escalacao escalacao = new Escalacao();
-        escalacao.clubeId(clubId);
-        escalacao.formacao(formation);
-        ReflectionTestUtils.setField(escalacao, "id", id);
-        return escalacao;
-    }
-
     private ObjectNode body(String formation, int... playerIds) {
         ObjectNode body = JSON.createObjectNode();
         body.put("formation", formation);
@@ -126,25 +115,23 @@ class LineupServiceTest {
         Jogador mei = player(4, "Lauro Neves", Position.MEI, Condition.APTO, 1);
         Jogador ata = player(5, "Otto Rangel", Position.ATA, Condition.APTO, 1);
         stubPlayers(gol, zag, lat, mei, ata);
-        when(clubes.findById(1)).thenReturn(Optional.of(club(1)));
-        when(escalacoes.findByClubeId(1)).thenReturn(Optional.empty());
-        when(escalacoes.save(any(Escalacao.class))).thenAnswer(invocation -> {
-            Escalacao saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "id", 7);
-            return saved;
-        });
+        Clube clube = club(1);
+        when(clubes.findById(1)).thenReturn(Optional.of(clube));
+        when(escalacoes.save(any(Escalacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LineupResponse response = service.put("1", body("2-1-1", 5, 3, 1, 4, 2));
 
+        assertThat(clube.formacao()).isEqualTo("2-1-1");
         assertThat(response.clubId()).isEqualTo(1);
         assertThat(response.formation()).isEqualTo("2-1-1");
         assertThat(response.complete()).isTrue();
         assertThat(response.players()).extracting(PlayerResponse::id).containsExactly(1, 2, 3, 4, 5);
-        verify(titulares).deleteByEscalacaoId(7);
-        ArgumentCaptor<EscalacaoTitular> saved = ArgumentCaptor.forClass(EscalacaoTitular.class);
-        verify(titulares, times(5)).save(saved.capture());
-        assertThat(saved.getAllValues()).extracting(EscalacaoTitular::jogadorId)
+        verify(escalacoes).deleteByClubeId(1);
+        ArgumentCaptor<Escalacao> saved = ArgumentCaptor.forClass(Escalacao.class);
+        verify(escalacoes, times(5)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(Escalacao::jogadorId)
                 .containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+        assertThat(saved.getAllValues()).allSatisfy(titular -> assertThat(titular.clubeId()).isEqualTo(1));
     }
 
     @Test
@@ -170,6 +157,7 @@ class LineupServiceTest {
         ApiException formation = assertThrows(ApiException.class,
                 () -> service.put("1", body("3-1", 1, 7, 3, 4, 5)));
         assertThat(formation.status()).isEqualTo(409);
+        verify(escalacoes, never()).save(any(Escalacao.class));
     }
 
     @Test
@@ -190,7 +178,7 @@ class LineupServiceTest {
     @DisplayName("sem escalação, devolve formação nula e lista vazia")
     void getsEmptyLineup() {
         when(clubes.findById(1)).thenReturn(Optional.of(club(1)));
-        when(escalacoes.findByClubeId(1)).thenReturn(Optional.empty());
+        when(escalacoes.findByClubeId(1)).thenReturn(List.of());
 
         LineupResponse response = service.get("1");
 
@@ -202,11 +190,13 @@ class LineupServiceTest {
     @Test
     @DisplayName("com titular removido, mantém a formação e marca a escalação como incompleta")
     void getsIncompleteLineup() {
-        when(clubes.findById(1)).thenReturn(Optional.of(club(1)));
-        when(escalacoes.findByClubeId(1)).thenReturn(Optional.of(escalacao(7, 1, "2-1-1")));
-        when(titulares.findByEscalacaoId(7)).thenReturn(List.of(
-                new EscalacaoTitular(7, 1), new EscalacaoTitular(7, 2), new EscalacaoTitular(7, 3),
-                new EscalacaoTitular(7, 5)));
+        Clube clube = club(1);
+        clube.formacao("2-1-1");
+        when(clubes.findById(1)).thenReturn(Optional.of(clube));
+        LocalDateTime now = LocalDateTime.now();
+        when(escalacoes.findByClubeId(1)).thenReturn(List.of(
+                new Escalacao(1, 1, now), new Escalacao(1, 2, now), new Escalacao(1, 3, now),
+                new Escalacao(1, 5, now)));
         stubPlayers(
                 player(1, "Rui Prado", Position.GOL, Condition.APTO, 1),
                 player(2, "Téo Brandão", Position.ZAG, Condition.APTO, 1),
@@ -225,6 +215,6 @@ class LineupServiceTest {
     void removesTitular() {
         service.removeTitular(4);
 
-        verify(titulares).deleteByJogadorId(4);
+        verify(escalacoes).deleteByJogadorId(4);
     }
 }

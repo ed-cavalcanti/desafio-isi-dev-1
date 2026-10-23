@@ -36,11 +36,11 @@ export function PlayerSaleSuccess({
   sale,
   onShowHistory,
 }: PlayerSaleSuccessProps) {
-  const isRescinded = sale.days_remaining > 0;
+  const isRescinded = sale.remaining_days > 0;
   const hasProfit = sale.profit > 0;
 
   const penaltyCaption = isRescinded
-    ? `${sale.penalty_percent}% do valor de venda, com teto de 10,00`
+    ? `${sale.penalty_rate}% do valor de venda, com teto de 10,00`
     : "Fidelidade cumprida: sem multa";
 
   const commissionCaption = hasProfit
@@ -81,12 +81,12 @@ export function PlayerSaleSuccess({
           <SummaryRow
             label="Valor de venda"
             caption="Valor de mercado no momento da venda"
-            value={formatCoins(sale.sale_value)}
+            value={formatCoins(sale.value)}
           />
           <Separator />
           <SummaryRow
             label="Dias restantes"
-            value={String(sale.days_remaining)}
+            value={String(sale.remaining_days)}
           />
           <Separator />
           <SummaryRow
@@ -104,13 +104,13 @@ export function PlayerSaleSuccess({
           <SummaryRow
             label="Comissão"
             caption={commissionCaption}
-            value={formatCoins(sale.commission)}
+            value={formatCoins(sale.fee)}
           />
           <Separator />
           <SummaryRow
             label="Crédito no caixa"
             caption="Valor de venda − multa − comissão"
-            value={formatSignedCoins(sale.credit)}
+            value={formatSignedCoins(sale.cash_change)}
             emphasis
           />
           <Separator />
@@ -135,7 +135,7 @@ export function PlayerSaleSuccess({
           <Separator />
           <SummaryRow
             label={`Novo caixa do ${clubName}`}
-            value={formatCoins(sale.cash)}
+            value={formatCoins(sale.club_cash)}
             emphasis
           />
         </div>

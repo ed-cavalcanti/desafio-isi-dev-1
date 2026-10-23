@@ -26,10 +26,10 @@ public class Partida {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "mandante_clube_id")
+    @Column(name = "mandante_id")
     private Integer mandanteClubeId;
 
-    @Column(name = "visitante_clube_id")
+    @Column(name = "visitante_id")
     private Integer visitanteClubeId;
 
     @Column(name = "gols_mandante")
@@ -48,7 +48,7 @@ public class Partida {
     @Column(name = "formacao_visitante", length = 5)
     private String formacaoVisitante;
 
-    @Column(name = "jogado_em")
+    @Column(name = "jogada_em")
     private LocalDateTime jogadoEm;
 
     public Partida() {

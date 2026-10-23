@@ -86,7 +86,7 @@ export function PlayerSaleDialog({
     if (!squadPlayer) return;
 
     let isActive = true;
-    const playerId = squadPlayer.player.id;
+    const playerId = squadPlayer.id;
 
     apiFetch<Lineup>(`/api/v1/clubs/${clubId}/lineup`)
       .then((lineup) => {
@@ -114,7 +114,7 @@ export function PlayerSaleDialog({
 
     try {
       const result = await apiFetch<Sale>(
-        `/api/v1/players/${squadPlayer.player.id}/sell`,
+        `/api/v1/players/${squadPlayer.id}/sell`,
         { method: "POST" },
       );
 
@@ -136,7 +136,7 @@ export function PlayerSaleDialog({
         {squadPlayer ? (
           sale ? (
             <PlayerSaleSuccess
-              playerName={squadPlayer.player.name}
+              playerName={squadPlayer.name}
               clubName={clubName}
               sale={sale}
               onShowHistory={onShowHistory}
@@ -149,7 +149,7 @@ export function PlayerSaleDialog({
             >
               <DialogHeader className="gap-1 px-6 py-4">
                 <DialogTitle className="text-heading-dialog">
-                  Vender {squadPlayer.player.name}?
+                  Vender {squadPlayer.name}?
                 </DialogTitle>
                 <DialogDescription className="text-body-sm text-muted-foreground">
                   O jogador sai do elenco de {clubName} e volta a ficar livre.
@@ -182,7 +182,7 @@ export function PlayerSaleDialog({
                     <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
                     <div className="flex flex-col gap-0.5">
                       <p className="text-body-sm-medium font-semibold">
-                        {squadPlayer.player.name} é titular
+                        {squadPlayer.name} é titular
                       </p>
                       <p className="text-body-sm">
                         Ao vender, ele sai da escalação, e o {clubName} só volta
@@ -199,16 +199,16 @@ export function PlayerSaleDialog({
                       aria-hidden="true"
                       className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-caption-medium font-semibold text-muted-foreground"
                     >
-                      {getInitials(squadPlayer.player.name)}
+                      {getInitials(squadPlayer.name)}
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-body-sm-semibold text-foreground">
-                        {squadPlayer.player.name}
+                        {squadPlayer.name}
                       </span>
                       <span className="truncate text-caption text-muted-foreground">
-                        {squadPlayer.player.position} ·{" "}
-                        {formatPosition(squadPlayer.player.position)} ·{" "}
-                        {squadPlayer.player.age} anos
+                        {squadPlayer.position} ·{" "}
+                        {formatPosition(squadPlayer.position)} ·{" "}
+                        {squadPlayer.age} anos
                       </span>
                     </div>
                   </div>
@@ -217,7 +217,7 @@ export function PlayerSaleDialog({
                       Valor de mercado
                     </span>
                     <span className="text-heading-card text-foreground tabular-nums">
-                      {formatCoins(squadPlayer.player.market_value)}
+                      {formatCoins(squadPlayer.market_value)}
                     </span>
                   </div>
                 </div>
@@ -237,14 +237,14 @@ export function PlayerSaleDialog({
                   <Separator />
                   <SummaryRow
                     label="Dias restantes"
-                    value={String(squadPlayer.contract.days_remaining)}
+                    value={String(squadPlayer.contract.remaining_days)}
                   />
                   <Separator />
                   <SummaryRow
                     label="% de multa se vender agora"
                     value={
                       <ContractPenaltyBadge
-                        penaltyPercent={squadPlayer.contract.penalty_percent}
+                        penaltyPercent={squadPlayer.contract.penalty_rate}
                       />
                     }
                   />

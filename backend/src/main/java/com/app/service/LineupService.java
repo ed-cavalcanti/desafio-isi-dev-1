@@ -1,5 +1,6 @@
 package com.app.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,15 +22,14 @@ import com.app.persistence.Clube;
 import com.app.persistence.ClubeRepository;
 import com.app.persistence.Escalacao;
 import com.app.persistence.EscalacaoRepository;
-import com.app.persistence.EscalacaoTitular;
-import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Escalação dos titulares do clube (RN19): cinco titulares com um goleiro e os
- * jogadores de linha de cada setor da formação.
+ * jogadores de linha de cada setor da formação. A formação fica em
+ * clubes.formacao e os titulares em escalacoes.
  */
 @Service
 public class LineupService {
@@ -41,24 +41,21 @@ public class LineupService {
     private final ClubeRepository clubes;
     private final JogadorRepository jogadores;
     private final EscalacaoRepository escalacoes;
-    private final EscalacaoTitularRepository titulares;
 
     public LineupService(LineupRequestValidator validator, PlayerMapper playerMapper, ClubeRepository clubes,
-            JogadorRepository jogadores, EscalacaoRepository escalacoes, EscalacaoTitularRepository titulares) {
+            JogadorRepository jogadores, EscalacaoRepository escalacoes) {
         this.validator = validator;
         this.playerMapper = playerMapper;
         this.clubes = clubes;
         this.jogadores = jogadores;
         this.escalacoes = escalacoes;
-        this.titulares = titulares;
     }
 
     @Transactional
     public LineupResponse put(String rawId, JsonNode body) {
         int clubId = PathId.parse(rawId);
         LineupRequest request = validator.put(body);
-        Clube clube = clubes.findById(clubId)
-                .orElseThrow(() -> ApiException.notFound("Clube não encontrado."));
+        Clube clube = findClub(clubId);
         List<Jogador> starters = starters(request);
         for (Jogador jogador : starters) {
             if (!clube.id().equals(jogador.clubeId()) || jogador.condicao() == Condition.DOENTE) {
@@ -69,36 +66,34 @@ public class LineupService {
         if (!fits(request.formation(), starters)) {
             throw ApiException.conflict("As posições dos titulares não fecham a formação.");
         }
-        Escalacao escalacao = escalacoes.findByClubeId(clube.id()).orElseGet(Escalacao::new);
-        escalacao.clubeId(clube.id());
-        escalacao.formacao(request.formation().code());
-        escalacao.atualizadoEm(BrasiliaTime.now());
-        Escalacao saved = escalacoes.save(escalacao);
-        titulares.deleteByEscalacaoId(saved.id());
+        clube.formacao(request.formation().code());
+        clubes.save(clube);
+        escalacoes.deleteByClubeId(clube.id());
+        LocalDateTime now = BrasiliaTime.now();
         for (Jogador jogador : starters) {
-            titulares.save(new EscalacaoTitular(saved.id(), jogador.id()));
+            escalacoes.save(new Escalacao(clube.id(), jogador.id(), now));
         }
-        return lineup(clube, saved.formacao(), starters);
+        return lineup(clube, clube.formacao(), starters);
     }
 
     @Transactional(readOnly = true)
     public LineupResponse get(String rawId) {
         int clubId = PathId.parse(rawId);
-        Clube clube = clubes.findById(clubId)
-                .orElseThrow(() -> ApiException.notFound("Clube não encontrado."));
-        Optional<Escalacao> escalacao = escalacoes.findByClubeId(clube.id());
-        if (escalacao.isEmpty()) {
-            return lineup(clube, null, List.of());
-        }
-        return lineup(clube, escalacao.get().formacao(), titulares(escalacao.get()));
+        Clube clube = findClub(clubId);
+        return lineup(clube, clube.formacao(), titulares(clube.id()));
     }
 
     /**
-     * RN19.5: o titular sai da escalação quando é vendido ou passa a DOENTE.
+     * RN19.5: o titular sai da escalação quando é vendido ou passa a DOENTE; a
+     * formação salva permanece e a escalação fica incompleta.
      */
     @Transactional
     public void removeTitular(Integer jogadorId) {
-        titulares.deleteByJogadorId(jogadorId);
+        escalacoes.deleteByJogadorId(jogadorId);
+    }
+
+    private Clube findClub(int clubId) {
+        return clubes.findById(clubId).orElseThrow(() -> ApiException.notFound("Clube não encontrado."));
     }
 
     private List<Jogador> starters(LineupRequest request) {
@@ -110,8 +105,8 @@ public class LineupService {
         return starters;
     }
 
-    private List<Jogador> titulares(Escalacao escalacao) {
-        return titulares.findByEscalacaoId(escalacao.id()).stream()
+    private List<Jogador> titulares(Integer clubId) {
+        return escalacoes.findByClubeId(clubId).stream()
                 .map(titular -> jogadores.findByIdAndExcluidoEmIsNull(titular.jogadorId()))
                 .flatMap(Optional::stream)
                 .sorted(SquadOrder.comparator(Jogador::posicao, Jogador::nome, Jogador::id))
