@@ -42,7 +42,10 @@ function ToastList() {
           aria-hidden="true"
           className="mt-0.5 size-5 shrink-0 text-success"
         />
-        <ToastPrimitive.Title className="text-body-sm-medium text-foreground" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <ToastPrimitive.Title className="text-body-sm-medium text-foreground" />
+          <ToastPrimitive.Description className="text-caption text-muted-foreground" />
+        </div>
         <ToastPrimitive.Close
           aria-label="Fechar"
           className="ml-auto rounded-md p-1 text-muted-foreground transition-colors hover:cursor-pointer hover:bg-muted hover:text-foreground"

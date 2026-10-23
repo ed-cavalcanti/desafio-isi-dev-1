@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   formatCoins,
-  formatCondition,
   formatPosition,
   getClubInitials,
   getInitials,
 } from "@/lib/format";
 import { AgilityBar } from "@/components/players/agility-bar";
+import { PlayerConditionBadge } from "@/components/players/player-condition-badge";
 import {
   PlayerActionsMenu,
   type PlayerAction,
@@ -24,15 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Club, Player, PlayerCondition } from "@/lib/types";
-
-const conditionStyles: Record<PlayerCondition, string> = {
-  APTO: "bg-success-soft text-success-soft-foreground border-success-soft-border",
-  MAL_CONDICIONADO:
-    "bg-warning-soft text-warning-soft-foreground border-warning-soft-border",
-  DOENTE:
-    "bg-destructive-soft text-destructive-soft-foreground border-destructive-soft-border",
-};
+import type { Club, Player } from "@/lib/types";
 
 const columns = [
   "Jogador",
@@ -127,16 +119,7 @@ export function PlayersTable({
                   {player.age}
                 </TableCell>
                 <TableCell className="lg:min-w-33">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "gap-1.5 rounded-lg px-2 py-0.5 text-caption-medium font-medium",
-                      conditionStyles[player.condition],
-                    )}
-                  >
-                    <span className="size-1.5 rounded-full bg-current" />
-                    {formatCondition(player.condition)}
-                  </Badge>
+                  <PlayerConditionBadge condition={player.condition} />
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground tabular-nums lg:min-w-22">
                   {formatCoins(player.base_value)}

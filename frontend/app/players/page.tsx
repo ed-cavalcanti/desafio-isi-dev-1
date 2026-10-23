@@ -10,6 +10,7 @@ import {
 import { useEffect, useState } from "react";
 
 import type { PlayerAction } from "@/components/players/player-actions-menu";
+import { PlayerConditionDialog } from "@/components/players/player-condition-dialog";
 import { PlayerCreateDialog } from "@/components/players/player-create-dialog";
 import { PlayerCreatedDialog } from "@/components/players/player-created-dialog";
 import { PlayerEditDialog } from "@/components/players/player-edit-dialog";
@@ -129,6 +130,7 @@ export default function PlayersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createdPlayer, setCreatedPlayer] = useState<Player | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [conditionPlayer, setConditionPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -240,6 +242,7 @@ export default function PlayersPage() {
 
   const handlePlayerAction = (action: PlayerAction, player: Player) => {
     if (action === "edit") setEditingPlayer(player);
+    if (action === "condition") setConditionPlayer(player);
   };
 
   const handlePlayerUpdated = () => {
@@ -410,6 +413,14 @@ export default function PlayersPage() {
         player={editingPlayer}
         onOpenChange={(open) => {
           if (!open) setEditingPlayer(null);
+        }}
+        onUpdated={handlePlayerUpdated}
+      />
+
+      <PlayerConditionDialog
+        player={conditionPlayer}
+        onOpenChange={(open) => {
+          if (!open) setConditionPlayer(null);
         }}
         onUpdated={handlePlayerUpdated}
       />
