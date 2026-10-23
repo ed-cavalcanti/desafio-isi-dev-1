@@ -7,13 +7,16 @@ import org.springframework.stereotype.Component;
 
 import com.app.api.PlayerRequest;
 import com.app.api.PlayerResponse;
+import com.app.model.BrasiliaTime;
 import com.app.model.Condition;
 import com.app.model.PlayerAttributes;
+import com.app.model.PlayerCalculator;
 import com.app.persistence.Jogador;
 
 /**
  * Tradução entre o jogador persistido ({@link Jogador}) e os contratos da API
- * ({@link PlayerRequest} e {@link PlayerResponse})
+ * ({@link PlayerRequest} e {@link PlayerResponse}), calculando na resposta o
+ * overall e o valor de mercado (RN06 e RN05).
  */
 @Component
 public class PlayerMapper {
@@ -35,14 +38,17 @@ public class PlayerMapper {
         jogador.condicao(Condition.APTO);
         jogador.clubeId(null);
         jogador.valorBase(baseValue);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = BrasiliaTime.now();
         jogador.criadoEm(now);
         jogador.atualizadoEm(now);
         return jogador;
     }
 
-    public PlayerResponse toResponse(Jogador jogador, int overall, BigDecimal marketValue) {
+    public PlayerResponse toResponse(Jogador jogador) {
         PlayerAttributes attributes = jogador.attributes();
+        int overall = PlayerCalculator.overall(jogador.posicao(), attributes);
+        BigDecimal marketValue = PlayerCalculator.marketValue(jogador.condicao(), jogador.idade(),
+                jogador.agilidade(), jogador.valorBase());
         return new PlayerResponse(
                 jogador.id(),
                 jogador.nome(),

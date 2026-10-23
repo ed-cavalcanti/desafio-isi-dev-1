@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 import com.app.model.Condition;
+import com.app.model.NameText;
 import com.app.model.Position;
 
 /**
@@ -68,11 +69,11 @@ public class PlayerListQueryValidator {
         if (raw == null) {
             return null;
         }
-        if (raw.codePoints().anyMatch(Character::isISOControl)) {
+        if (NameText.hasControlChar(raw)) {
             throw ApiException.badRequest("O parâmetro search não aceita caracteres de controle.");
         }
-        String search = raw.replaceAll(" +", " ").trim();
-        int length = search.codePointCount(0, search.length());
+        String search = NameText.normalize(raw);
+        int length = NameText.length(search);
         if (length < SEARCH_MIN || length > SEARCH_MAX) {
             throw ApiException.badRequest("O parâmetro search deve ter de 2 a 100 caracteres.");
         }

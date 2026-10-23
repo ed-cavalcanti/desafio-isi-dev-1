@@ -12,6 +12,7 @@ import com.app.api.PlayerSort;
 import com.app.mapper.PlayerMapper;
 import com.app.model.NameOrder;
 import com.app.model.PlayerCalculator;
+import com.app.persistence.ClubeRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,11 +31,14 @@ public class PlayerService {
 
     private final PlayerRequestValidator validator;
     private final PlayerMapper mapper;
+    private final ClubeRepository clubes;
     private final JogadorRepository jogadores;
 
-    public PlayerService(PlayerRequestValidator validator, PlayerMapper mapper, JogadorRepository jogadores) {
+    public PlayerService(PlayerRequestValidator validator, PlayerMapper mapper, ClubeRepository clubes,
+            JogadorRepository jogadores) {
         this.validator = validator;
         this.mapper = mapper;
+        this.clubes = clubes;
         this.jogadores = jogadores;
     }
 
@@ -43,7 +47,7 @@ public class PlayerService {
         PlayerRequest request = validator.create(body);
         int overall = PlayerCalculator.overall(request.position(), request.attributes());
         BigDecimal baseValue = PlayerCalculator.baseValue(overall, request.age(), request.attributes().potential());
-        return toResponse(jogadores.save(mapper.toEntity(request, baseValue)));
+        return mapper.toResponse(jogadores.save(mapper.toEntity(request, baseValue)));
     }
 
     @Transactional(readOnly = true)
@@ -51,17 +55,16 @@ public class PlayerService {
         int id = PathId.parse(rawId);
         Jogador jogador = jogadores.findByIdAndExcluidoEmIsNull(id)
                 .orElseThrow(() -> ApiException.notFound("Jogador não encontrado."));
-        return toResponse(jogador);
+        return mapper.toResponse(jogador);
     }
 
     @Transactional(readOnly = true)
     public PlayerPageResponse list(PlayerListQuery query) {
-        List<Jogador> all = jogadores.findByExcluidoEmIsNull();
-        if (query.clubId() != null && all.stream().noneMatch(jogador -> query.clubId().equals(jogador.clubeId()))) {
+        if (query.clubId() != null && !clubes.existsById(query.clubId())) {
             throw ApiException.notFound("Clube não encontrado.");
         }
-        List<PlayerResponse> filtered = all.stream()
-                .map(this::toResponse)
+        List<PlayerResponse> filtered = jogadores.findByExcluidoEmIsNull().stream()
+                .map(mapper::toResponse)
                 .filter(player -> matches(player, query))
                 .sorted(comparator(query))
                 .toList();
@@ -113,12 +116,5 @@ public class PlayerService {
         }
         int to = (int) Math.min(from + query.limit(), all.size());
         return List.copyOf(all.subList((int) from, to));
-    }
-
-    private PlayerResponse toResponse(Jogador jogador) {
-        int overall = PlayerCalculator.overall(jogador.posicao(), jogador.attributes());
-        BigDecimal marketValue = PlayerCalculator.marketValue(jogador.condicao(), jogador.idade(),
-                jogador.agilidade(), jogador.valorBase());
-        return mapper.toResponse(jogador, overall, marketValue);
     }
 }

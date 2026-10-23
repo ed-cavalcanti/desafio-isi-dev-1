@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.springframework.stereotype.Component;
 
+import com.app.model.NameText;
 import com.app.model.PlayerAttributes;
 import com.app.model.Position;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -54,18 +55,18 @@ public class PlayerRequestValidator {
             throw ApiException.badRequest("O campo name é obrigatório e deve ser um texto.");
         }
         String raw = node.asText();
-        if (hasControlChar(raw)) {
+        if (NameText.hasControlChar(raw)) {
             throw ApiException.badRequest("O campo name não aceita caracteres de controle.");
         }
-        String name = normalizeSpaces(raw);
-        int length = name.codePointCount(0, name.length());
+        String name = NameText.normalize(raw);
+        int length = NameText.length(name);
         if (length < NAME_MIN || length > NAME_MAX) {
             throw ApiException.badRequest("O campo name deve ter de 3 a 100 caracteres.");
         }
-        if (hasDigit(name)) {
+        if (NameText.hasDigit(name)) {
             throw ApiException.badRequest("O campo name não aceita dígitos.");
         }
-        if (words(name) < 2) {
+        if (NameText.words(name) < 2) {
             throw ApiException.badRequest("O campo name deve ter pelo menos duas palavras.");
         }
         return name;
@@ -141,27 +142,5 @@ public class PlayerRequestValidator {
         if (value < 1 || value > ATTRIBUTE_MAX) {
             throw ApiException.badRequest("O campo " + field + " deve estar entre 1 e 99.");
         }
-    }
-
-    private String normalizeSpaces(String raw) {
-        return raw.replaceAll(" +", " ").trim();
-    }
-
-    private boolean hasControlChar(String value) {
-        return value.codePoints().anyMatch(Character::isISOControl);
-    }
-
-    private boolean hasDigit(String value) {
-        return value.codePoints().anyMatch(codePoint -> codePoint >= '0' && codePoint <= '9');
-    }
-
-    private int words(String value) {
-        int count = 0;
-        for (String part : value.split(" ", -1)) {
-            if (part.codePoints().anyMatch(Character::isLetter)) {
-                count++;
-            }
-        }
-        return count;
     }
 }

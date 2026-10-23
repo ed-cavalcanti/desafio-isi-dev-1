@@ -13,6 +13,7 @@ import com.app.api.PlayerResponse;
 import com.app.api.PlayerSort;
 import com.app.mapper.PlayerMapper;
 import com.app.model.Condition;
+import com.app.persistence.ClubeRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,13 +37,16 @@ class PlayerServiceTest {
     private final PlayerMapper mapper = new PlayerMapper();
 
     @Mock
+    private ClubeRepository clubes;
+
+    @Mock
     private JogadorRepository jogadores;
 
     private PlayerService service;
 
     @BeforeEach
     void setUp() {
-        service = new PlayerService(validator, mapper, jogadores);
+        service = new PlayerService(validator, mapper, clubes, jogadores);
     }
 
     private ObjectNode body(int age, int potential) {
@@ -164,6 +168,7 @@ class PlayerServiceTest {
                         new BigDecimal("36.00")),
                 player(3, "João Pedro", "ZAG", 50, 40, Condition.DOENTE, 1,
                         new BigDecimal("36.00"))));
+        when(clubes.existsById(1)).thenReturn(true);
 
         PlayerListQuery search = new PlayerListQuery("JOAO", null, null, null, null, 16, 45,
                 BigDecimal.ZERO, new BigDecimal("550"), List.of(PlayerSort.NAME), 1, 10);
@@ -224,7 +229,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("filtro por clube inexistente responde 404")
     void rejectsUnknownClub() {
-        when(jogadores.findByExcluidoEmIsNull()).thenReturn(List.of(player(1, "Ana Lima")));
+        when(clubes.existsById(99)).thenReturn(false);
 
         PlayerListQuery query = new PlayerListQuery(null, null, null, false, 99, 16, 45,
                 BigDecimal.ZERO, new BigDecimal("550"), List.of(PlayerSort.NAME), 1, 10);
