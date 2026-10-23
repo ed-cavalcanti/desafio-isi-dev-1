@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geist = Geist({
@@ -27,13 +28,15 @@ export default function RootLayout({
     <html lang="pt-BR" className={cn("font-sans", geist.variable)}>
       <body>
         <TooltipProvider>
-          <SidebarProvider className="h-svh overflow-hidden">
-            <AppSidebar />
-            <SidebarInset className="my-2 mr-2 overflow-y-auto rounded-xl border border-border bg-sidebar shadow-sm">
-              <AppHeader />
-              {children}
-            </SidebarInset>
-          </SidebarProvider>
+          <ToastProvider>
+            <SidebarProvider className="h-svh overflow-hidden">
+              <AppSidebar />
+              <SidebarInset className="my-2 mr-2 overflow-y-auto rounded-xl border border-border bg-sidebar shadow-sm">
+                <AppHeader />
+                {children}
+              </SidebarInset>
+            </SidebarProvider>
+          </ToastProvider>
         </TooltipProvider>
       </body>
     </html>

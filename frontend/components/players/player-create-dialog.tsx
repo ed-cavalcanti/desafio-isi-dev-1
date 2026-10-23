@@ -1,8 +1,9 @@
 "use client";
 
 import { AlertCircle, ChartBar, Info, Lock } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 
+import { Field, NumberField } from "@/components/players/player-form-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +17,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api";
 import { formatPosition } from "@/lib/format";
+import {
+  normalizeName,
+  parseInteger,
+  validatePlayerName,
+} from "@/lib/player-form";
 import type { Player, Position } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
@@ -110,17 +116,6 @@ function emptyForm(): PlayerFormValues {
   };
 }
 
-function normalizeName(value: string) {
-  return value.replace(/\s+/g, " ").trim();
-}
-
-function parseInteger(value: string) {
-  if (!/^\d+$/.test(value)) return null;
-
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
 type AttributePreviewItem = {
   field: NumericField;
   label: string;
@@ -179,18 +174,11 @@ function getAttributePreview(
 
 function validate(values: PlayerFormValues) {
   const errors: FormErrors = {};
+  const nameError = validatePlayerName(values.name);
   const name = normalizeName(values.name);
 
-  if (!name) {
-    errors.name = "Informe o nome do jogador.";
-  } else if (/[\u0000-\u001f\u007f]/.test(values.name)) {
-    errors.name = "O nome não aceita caracteres de controle.";
-  } else if ([...name].length < 3 || [...name].length > 100) {
-    errors.name = "O nome deve ter de 3 a 100 caracteres.";
-  } else if (/\p{Nd}/u.test(name)) {
-    errors.name = "O nome não aceita dígitos.";
-  } else if (name.split(" ").filter((part) => /\p{L}/u.test(part)).length < 2) {
-    errors.name = "O nome deve ter pelo menos duas palavras.";
+  if (nameError) {
+    errors.name = nameError;
   }
 
   if (!values.position) {
@@ -640,73 +628,6 @@ export function PlayerCreateDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  htmlFor: string;
-  caption?: string;
-  error?: string;
-  children: ReactNode;
-};
-
-function Field({ label, htmlFor, caption, error, children }: FieldProps) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-body-sm-medium text-foreground">
-        {label}
-      </label>
-      {children}
-      {caption ? (
-        <p className="text-caption text-muted-foreground">{caption}</p>
-      ) : null}
-      {error ? (
-        <p id={`${htmlFor}-error`} className="text-caption text-destructive">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-type NumberFieldProps = {
-  id: string;
-  label: string;
-  caption?: string;
-  value: string;
-  min: number;
-  max: number;
-  error?: string;
-  onChange: (value: string) => void;
-};
-
-function NumberField({
-  id,
-  label,
-  caption,
-  value,
-  min,
-  max,
-  error,
-  onChange,
-}: NumberFieldProps) {
-  return (
-    <Field label={label} htmlFor={id} caption={caption} error={error}>
-      <Input
-        id={id}
-        type="number"
-        inputMode="numeric"
-        value={value}
-        min={min}
-        max={max}
-        step={1}
-        onChange={(event) => onChange(event.target.value)}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className="h-9! focus-visible:border-primary focus-visible:ring-0"
-      />
-    </Field>
   );
 }
 

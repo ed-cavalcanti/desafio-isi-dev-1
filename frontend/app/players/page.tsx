@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import type { PlayerAction } from "@/components/players/player-actions-menu";
 import { PlayerCreateDialog } from "@/components/players/player-create-dialog";
 import { PlayerCreatedDialog } from "@/components/players/player-created-dialog";
+import { PlayerEditDialog } from "@/components/players/player-edit-dialog";
 import { PlayersActiveFilters } from "@/components/players/players-active-filters";
 import { PlayersFilters } from "@/components/players/players-filters";
 import {
@@ -126,6 +128,7 @@ export default function PlayersPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createdPlayer, setCreatedPlayer] = useState<Player | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -235,6 +238,14 @@ export default function PlayersPage() {
     setCreatedPlayer(player);
   };
 
+  const handlePlayerAction = (action: PlayerAction, player: Player) => {
+    if (action === "edit") setEditingPlayer(player);
+  };
+
+  const handlePlayerUpdated = () => {
+    setReloadKey((key) => key + 1);
+  };
+
   const handleScopeChange = (nextScope: PlayerScope) => {
     setScope(nextScope);
     setPage(1);
@@ -329,7 +340,11 @@ export default function PlayersPage() {
             </Button>
           </div>
         ) : (
-          <PlayersTable players={players} clubsById={clubsById} />
+          <PlayersTable
+            players={players}
+            clubsById={clubsById}
+            onPlayerAction={handlePlayerAction}
+          />
         )}
 
         {!isLoading && !error && meta && totalPages > 0 ? (
@@ -389,6 +404,14 @@ export default function PlayersPage() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onCreated={handlePlayerCreated}
+      />
+
+      <PlayerEditDialog
+        player={editingPlayer}
+        onOpenChange={(open) => {
+          if (!open) setEditingPlayer(null);
+        }}
+        onUpdated={handlePlayerUpdated}
       />
 
       <PlayerCreatedDialog
