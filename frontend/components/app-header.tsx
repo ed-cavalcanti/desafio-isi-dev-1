@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Fragment } from "react";
 import { RefreshCw } from "lucide-react";
 
+import { useBreadcrumbLabel } from "@/components/breadcrumb-label";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -33,7 +34,7 @@ function humanize(segment: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function buildCrumbs(pathname: string): Crumb[] {
+function buildCrumbs(pathname: string, lastLabel: string | null): Crumb[] {
   const current = navigation.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
@@ -50,16 +51,24 @@ function buildCrumbs(pathname: string): Crumb[] {
   ];
 
   const rest = pathname.slice(current.href.length);
-  for (const segment of rest.split("/").filter(Boolean)) {
-    crumbs.push({ label: humanize(segment) });
-  }
+  const segments = rest.split("/").filter(Boolean);
+  segments.forEach((segment, index) => {
+    const isLastSegment = index === segments.length - 1;
+    crumbs.push({
+      label: isLastSegment && lastLabel ? lastLabel : humanize(segment),
+    });
+  });
 
   return crumbs;
 }
 
 export function AppHeader() {
   const pathname = usePathname();
-  const crumbs = buildCrumbs(pathname);
+  const { label } = useBreadcrumbLabel();
+  const crumbs = buildCrumbs(
+    pathname,
+    label?.pathname === pathname ? label.label : null,
+  );
 
   return (
     <header data-slot="app-header" className="sticky top-0 z-10 bg-background">

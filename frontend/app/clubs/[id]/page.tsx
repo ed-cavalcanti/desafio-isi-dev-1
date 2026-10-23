@@ -2,9 +2,10 @@
 
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useBreadcrumbLabel } from "@/components/breadcrumb-label";
 import { ClubDetailsHeader } from "@/components/clubs/club-details-header";
 import { ClubDetailsTabs } from "@/components/clubs/club-details-tabs";
 import {
@@ -36,11 +37,19 @@ function ClubDetailsHeaderSkeleton() {
 
 export default function ClubDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const pathname = usePathname();
+  const { setLabel } = useBreadcrumbLabel();
   const [club, setClub] = useState<ClubDetails | null>(null);
   const [transactionCount, setTransactionCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const clubName = club?.id === Number(id) ? club.name : null;
+
+  useEffect(() => {
+    setLabel(clubName ? { pathname, label: clubName } : null);
+  }, [clubName, pathname, setLabel]);
 
   useEffect(() => {
     let isActive = true;
