@@ -83,7 +83,9 @@ Aguarde o build do backend e do frontend. Depois:
 O `docker compose` define `BACKEND_URL=http://backend:8080` para o frontend. O Next.js
 repassa as chamadas de `/api/v1/*` para o backend. No navegador, o frontend conversa apenas
 com a própria origem; a API libera CORS somente para `http://localhost:3000` (configurável por
-`CORS_ALLOWED_ORIGIN`).
+`CORS_ALLOWED_ORIGIN`). Todas as imagens usadas são públicas (`postgres`, `maven`, `eclipse-temurin`
+e `node`) e as dependências vêm de registros públicos; o `frontend/package-lock.json` está
+versionado para a instalação reproduzível.
 
 Ver logs:
 
