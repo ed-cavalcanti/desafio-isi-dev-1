@@ -113,6 +113,8 @@ docker compose down -v
 Banco:
 
 ```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 docker compose up -d db
 ```
 
