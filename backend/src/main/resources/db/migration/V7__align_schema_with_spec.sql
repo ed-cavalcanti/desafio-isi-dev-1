@@ -39,6 +39,8 @@ ALTER TABLE duelos_partida RENAME COLUMN defensor_condicao TO condicao_defensor;
 ALTER TABLE duelos_partida RENAME COLUMN defensor_atributo TO atributo_defesa;
 ALTER TABLE duelos_partida ALTER COLUMN atributo_defesa TYPE VARCHAR(10);
 ALTER TABLE duelos_partida RENAME COLUMN defensor_valor TO valor_defesa;
+ALTER TABLE duelos_partida ADD CONSTRAINT duelos_atacante_fk FOREIGN KEY (atacante_id) REFERENCES jogadores (id);
+ALTER TABLE duelos_partida ADD CONSTRAINT duelos_defensor_fk FOREIGN KEY (defensor_id) REFERENCES jogadores (id);
 
 ALTER TABLE transacoes ALTER COLUMN jogador_nome TYPE VARCHAR(100);
 ALTER TABLE transacoes RENAME COLUMN jogador_nome TO nome_jogador;
