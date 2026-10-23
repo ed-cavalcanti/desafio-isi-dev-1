@@ -1,6 +1,7 @@
 package com.app.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -10,22 +11,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.app.api.ApiException;
+import com.app.api.ClubDetailsResponse;
 import com.app.api.ClubRequest;
 import com.app.api.ClubRequestValidator;
 import com.app.api.ClubResponse;
 import com.app.api.ClubSort;
+import com.app.api.ContractResponse;
+import com.app.api.PathId;
+import com.app.api.SquadPlayerResponse;
 import com.app.mapper.ClubMapper;
 import com.app.mapper.PlayerMapper;
+import com.app.model.BrasiliaTime;
+import com.app.model.ContractStatus;
+import com.app.model.MarketCalculator;
 import com.app.model.NameOrder;
+import com.app.model.SquadOrder;
 import com.app.persistence.Clube;
 import com.app.persistence.ClubeRepository;
+import com.app.persistence.Contrato;
+import com.app.persistence.ContratoRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Cadastro e listagem de clubes. O clube nasce com 300,00 em caixa (RN10) e o
- * valor do elenco e o patrimônio são calculados a cada consulta (RN11).
+ * Cadastro, listagem e consulta de clubes. O clube nasce com 300,00 em caixa
+ * (RN10) e o valor do elenco e o patrimônio são calculados a cada consulta
+ * (RN11).
  */
 @Service
 public class ClubService {
@@ -37,14 +49,16 @@ public class ClubService {
     private final PlayerMapper playerMapper;
     private final ClubeRepository clubes;
     private final JogadorRepository jogadores;
+    private final ContratoRepository contratos;
 
     public ClubService(ClubRequestValidator validator, ClubMapper mapper, PlayerMapper playerMapper,
-            ClubeRepository clubes, JogadorRepository jogadores) {
+            ClubeRepository clubes, JogadorRepository jogadores, ContratoRepository contratos) {
         this.validator = validator;
         this.mapper = mapper;
         this.playerMapper = playerMapper;
         this.clubes = clubes;
         this.jogadores = jogadores;
+        this.contratos = contratos;
     }
 
     @Transactional
@@ -70,6 +84,43 @@ public class ClubService {
                 .map(clube -> mapper.toResponse(clube, squadValues.getOrDefault(clube.id(), BigDecimal.ZERO)))
                 .sorted(comparator(sort))
                 .toList();
+    }
+
+    /**
+     * RN11: o elenco vem na ordem do elenco, com o contrato de cada jogador e o
+     * valor do elenco e o patrimônio calculados a cada consulta.
+     */
+    @Transactional(readOnly = true)
+    public ClubDetailsResponse get(String rawId) {
+        int id = PathId.parse(rawId);
+        Clube clube = clubes.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Clube não encontrado."));
+        LocalDateTime now = BrasiliaTime.now();
+        List<SquadPlayerResponse> players = squad(clube.id()).stream()
+                .map(jogador -> new SquadPlayerResponse(playerMapper.toResponse(jogador), contract(jogador, now)))
+                .toList();
+        BigDecimal squadValue = players.stream()
+                .map(player -> player.player().marketValue())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ClubDetailsResponse(clube.id(), clube.nome(), clube.sigla(), clube.caixa(), squadValue,
+                clube.caixa().add(squadValue), players);
+    }
+
+    private List<Jogador> squad(Integer clubId) {
+        return jogadores.findByExcluidoEmIsNull().stream()
+                .filter(jogador -> clubId.equals(jogador.clubeId()))
+                .sorted(SquadOrder.comparator(Jogador::posicao, Jogador::nome, Jogador::id))
+                .toList();
+    }
+
+    private ContractResponse contract(Jogador jogador, LocalDateTime now) {
+        Contrato contrato = contratos.findByJogadorIdAndStatus(jogador.id(), ContractStatus.ATIVO).orElse(null);
+        if (contrato == null) {
+            return null;
+        }
+        int daysRemaining = MarketCalculator.daysRemaining(contrato.fidelidadeAte(), now);
+        return new ContractResponse(BrasiliaTime.format(contrato.fidelidadeAte()), daysRemaining,
+                MarketCalculator.penaltyPercent(daysRemaining));
     }
 
     private Map<Integer, BigDecimal> squadValues() {

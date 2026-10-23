@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,16 +18,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.app.api.ApiException;
+import com.app.api.ClubDetailsResponse;
 import com.app.api.ClubRequest;
 import com.app.api.ClubRequestValidator;
 import com.app.api.ClubResponse;
 import com.app.api.ClubSort;
 import com.app.mapper.ClubMapper;
 import com.app.mapper.PlayerMapper;
+import com.app.model.BrasiliaTime;
 import com.app.model.Condition;
+import com.app.model.ContractStatus;
 import com.app.model.Position;
 import com.app.persistence.Clube;
 import com.app.persistence.ClubeRepository;
+import com.app.persistence.Contrato;
+import com.app.persistence.ContratoRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,11 +52,14 @@ class ClubServiceTest {
     @Mock
     private JogadorRepository jogadores;
 
+    @Mock
+    private ContratoRepository contratos;
+
     private ClubService service;
 
     @BeforeEach
     void setUp() {
-        service = new ClubService(validator, mapper, playerMapper, clubes, jogadores);
+        service = new ClubService(validator, mapper, playerMapper, clubes, jogadores, contratos);
     }
 
     private ObjectNode body(String name, String acronym) {
@@ -171,5 +180,63 @@ class ClubServiceTest {
 
         assertThat(service.list(ClubSort.NET_WORTH_DESC)).extracting(ClubResponse::id)
                 .containsExactly(1, 2);
+    }
+
+    private Jogador squadPlayer(int id, String name, Position position, Integer clubId, String baseValue) {
+        Jogador jogador = player(id, clubId, baseValue);
+        jogador.nome(name);
+        jogador.posicao(position);
+        return jogador;
+    }
+
+    @Test
+    @DisplayName("consulta o clube com o elenco ordenado, os contratos e os valores calculados")
+    void getsClubWithSquadAndContracts() {
+        when(clubes.findById(1)).thenReturn(Optional.of(club(1, "Águias FC", "AFC")));
+        when(jogadores.findByExcluidoEmIsNull()).thenReturn(List.of(
+                squadPlayer(5, "Otto Rangel", Position.ATA, 1, "40.00"),
+                squadPlayer(1, "Rui Prado", Position.GOL, 1, "20.00"),
+                squadPlayer(2, "Téo Brandão", Position.ZAG, 1, "30.00"),
+                squadPlayer(9, "Livre Qualquer", Position.MEI, null, "99.00")));
+        when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO))
+                .thenReturn(Optional.of(new Contrato(1, 1, new BigDecimal("20.00"),
+                        BrasiliaTime.now().plusDays(30).minusHours(12), ContractStatus.ATIVO, BrasiliaTime.now())));
+        when(contratos.findByJogadorIdAndStatus(2, ContractStatus.ATIVO))
+                .thenReturn(Optional.of(new Contrato(2, 1, new BigDecimal("30.00"),
+                        BrasiliaTime.now().plusDays(200), ContractStatus.ATIVO, BrasiliaTime.now())));
+        when(contratos.findByJogadorIdAndStatus(5, ContractStatus.ATIVO))
+                .thenReturn(Optional.of(new Contrato(5, 1, new BigDecimal("40.00"),
+                        BrasiliaTime.now().plusDays(200), ContractStatus.ATIVO, BrasiliaTime.now())));
+
+        ClubDetailsResponse response = service.get("1");
+
+        assertThat(response.name()).isEqualTo("Águias FC");
+        assertThat(response.cash()).isEqualByComparingTo("300.00");
+        assertThat(response.squadValue()).isEqualByComparingTo("90.00");
+        assertThat(response.netWorth()).isEqualByComparingTo("390.00");
+        assertThat(response.players()).extracting(player -> player.player().id())
+                .containsExactly(1, 2, 5);
+        assertThat(response.players().get(0).contract().daysRemaining()).isEqualTo(30);
+        assertThat(response.players().get(0).contract().penaltyPercent()).isEqualTo(5);
+        assertThat(response.players().get(0).contract().loyaltyUntil())
+                .matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}-03:00");
+        assertThat(response.players().get(1).contract().penaltyPercent()).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("sem elenco devolve lista vazia e ids inválidos ou inexistentes respondem 404")
+    void getsEmptySquadAndNotFound() {
+        when(clubes.findById(1)).thenReturn(Optional.of(club(1, "Águias FC", "AFC")));
+        when(jogadores.findByExcluidoEmIsNull()).thenReturn(List.of());
+
+        ClubDetailsResponse response = service.get("1");
+
+        assertThat(response.players()).isEmpty();
+        assertThat(response.squadValue()).isEqualByComparingTo("0.00");
+        assertThat(response.netWorth()).isEqualByComparingTo("300.00");
+
+        when(clubes.findById(99)).thenReturn(Optional.empty());
+        assertThat(assertThrows(ApiException.class, () -> service.get("99")).status()).isEqualTo(404);
+        assertThat(assertThrows(ApiException.class, () -> service.get("abc")).status()).isEqualTo(404);
     }
 }
