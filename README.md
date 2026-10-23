@@ -34,6 +34,7 @@ Criar o banco e subir apenas o PostgreSQL (na raiz do repositório):
 
 ```bash
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 docker compose up -d db
 ```
 
@@ -48,6 +49,7 @@ Recriar o banco do zero (apaga o volume e roda todas as migrações novamente):
 ```bash
 docker compose down -v
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 docker compose up -d db backend
 ```
 
