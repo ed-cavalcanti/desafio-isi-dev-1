@@ -1,8 +1,11 @@
 package com.app.service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,9 +14,12 @@ import com.app.api.ApiException;
 import com.app.api.DuelResponse;
 import com.app.api.DuelistResponse;
 import com.app.api.LineupResponse;
+import com.app.api.MatchQuery;
 import com.app.api.MatchRequest;
 import com.app.api.MatchRequestValidator;
 import com.app.api.MatchResponse;
+import com.app.api.MatchSummaryResponse;
+import com.app.api.PathId;
 import com.app.api.PlayerResponse;
 import com.app.model.Attribute;
 import com.app.model.BrasiliaTime;
@@ -75,7 +81,48 @@ public class MatchService {
                 .map(duelos::save)
                 .map(this::toDuelResponse)
                 .toList();
-        return toResponse(partida, mandante, visitante, duels);
+        return toResponse(partida, mandante.nome(), visitante.nome(), duels);
+    }
+
+    /**
+     * RN21.1: histórico da mais recente para a mais antiga; no mesmo instante,
+     * o id maior vem primeiro.
+     */
+    @Transactional(readOnly = true)
+    public List<MatchSummaryResponse> list(MatchQuery query) {
+        if (query.clubId() != null && clubes.findById(query.clubId()).isEmpty()) {
+            throw ApiException.notFound("Clube não encontrado.");
+        }
+        Map<Integer, String> names = clubNames();
+        List<Partida> matches = query.clubId() == null
+                ? partidas.findAll()
+                : partidas.findByMandanteClubeIdOrVisitanteClubeId(query.clubId(), query.clubId());
+        return matches.stream()
+                .sorted(Comparator.comparing(Partida::jogadoEm).thenComparing(Partida::id).reversed())
+                .map(partida -> toSummary(partida, names.get(partida.mandanteClubeId()),
+                        names.get(partida.visitanteClubeId())))
+                .toList();
+    }
+
+    /**
+     * RN21.2: a partida com os seis duelos na ordem da RN20.
+     */
+    @Transactional(readOnly = true)
+    public MatchResponse get(String rawId) {
+        int id = PathId.parse(rawId);
+        Partida partida = partidas.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Partida não encontrada."));
+        Map<Integer, String> names = clubNames();
+        List<DuelResponse> duels = duelos.findByPartidaId(partida.id()).stream()
+                .sorted(Comparator.comparing(Duelo::ordem))
+                .map(this::toDuelResponse)
+                .toList();
+        return toResponse(partida, names.get(partida.mandanteClubeId()), names.get(partida.visitanteClubeId()), duels);
+    }
+
+    private Map<Integer, String> clubNames() {
+        return clubes.findAll().stream()
+                .collect(Collectors.toMap(Clube::id, Clube::nome));
     }
 
     private Clube findClub(int clubId) {
@@ -117,9 +164,15 @@ public class MatchService {
         return attribute.name().toLowerCase(Locale.ROOT);
     }
 
-    private MatchResponse toResponse(Partida partida, Clube mandante, Clube visitante, List<DuelResponse> duels) {
-        return new MatchResponse(partida.id(), mandante.id(), mandante.nome(), visitante.id(), visitante.nome(),
-                partida.golsMandante(), partida.golsVisitante(), partida.resultado(),
+    private MatchSummaryResponse toSummary(Partida partida, String homeName, String awayName) {
+        return new MatchSummaryResponse(partida.id(), partida.mandanteClubeId(), homeName, partida.visitanteClubeId(),
+                awayName, partida.golsMandante(), partida.golsVisitante(), partida.resultado(),
+                BrasiliaTime.format(partida.jogadoEm()));
+    }
+
+    private MatchResponse toResponse(Partida partida, String homeName, String awayName, List<DuelResponse> duels) {
+        return new MatchResponse(partida.id(), partida.mandanteClubeId(), homeName, partida.visitanteClubeId(),
+                awayName, partida.golsMandante(), partida.golsVisitante(), partida.resultado(),
                 BrasiliaTime.format(partida.jogadoEm()), partida.formacaoMandante(), partida.formacaoVisitante(),
                 duels);
     }

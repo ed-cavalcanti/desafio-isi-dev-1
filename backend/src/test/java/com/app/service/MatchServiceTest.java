@@ -25,8 +25,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.app.api.ApiException;
 import com.app.api.DuelResponse;
 import com.app.api.LineupRequestValidator;
+import com.app.api.MatchQuery;
 import com.app.api.MatchRequestValidator;
 import com.app.api.MatchResponse;
+import com.app.api.MatchSummaryResponse;
 import com.app.mapper.PlayerMapper;
 import com.app.model.Condition;
 import com.app.model.MatchOutcome;
@@ -213,5 +215,71 @@ class MatchServiceTest {
         body.put("away_club_id", 2);
 
         assertThat(assertThrows(ApiException.class, () -> service.play(body)).status()).isEqualTo(404);
+    }
+
+    private Partida partida(int id, int home, int away, int homeGoals, int awayGoals, java.time.LocalDateTime playedAt) {
+        MatchOutcome result = homeGoals > awayGoals ? MatchOutcome.MANDANTE
+                : awayGoals > homeGoals ? MatchOutcome.VISITANTE : MatchOutcome.EMPATE;
+        Partida partida = new Partida(home, away, homeGoals, awayGoals, result, "2-1-1", "2-1-1", playedAt);
+        ReflectionTestUtils.setField(partida, "id", id);
+        return partida;
+    }
+
+    private Duelo duelo(int ordem, String attackerName) {
+        return new Duelo(15, ordem, 30 + ordem, attackerName, Position.ATA, Condition.APTO, "shooting", 75,
+                40, "Ivo Teles", Position.GOL, Condition.APTO, "defending", 72, ordem == 1);
+    }
+
+    @Test
+    @DisplayName("lista o histórico da mais recente para a mais antiga e filtra por clube")
+    void listsMatches() {
+        Clube alfa = new Clube();
+        alfa.nome("Alfa FC");
+        ReflectionTestUtils.setField(alfa, "id", 1);
+        Clube beta = new Clube();
+        beta.nome("Beta FC");
+        ReflectionTestUtils.setField(beta, "id", 2);
+        when(clubes.findAll()).thenReturn(List.of(alfa, beta));
+        when(partidas.findAll()).thenReturn(List.of(
+                partida(1, 1, 2, 1, 2, java.time.LocalDateTime.of(2026, 11, 1, 10, 0)),
+                partida(2, 2, 1, 3, 3, java.time.LocalDateTime.of(2026, 11, 5, 10, 0)),
+                partida(3, 1, 2, 0, 1, java.time.LocalDateTime.of(2026, 11, 5, 10, 0))));
+
+        assertThat(service.list(new MatchQuery(null))).extracting(MatchSummaryResponse::id)
+                .containsExactly(3, 2, 1);
+        assertThat(service.list(new MatchQuery(null)).get(1).result()).isEqualTo(MatchOutcome.EMPATE);
+
+        when(clubes.findById(2)).thenReturn(Optional.of(beta));
+        when(partidas.findByMandanteClubeIdOrVisitanteClubeId(2, 2))
+                .thenReturn(List.of(partida(1, 1, 2, 1, 2, java.time.LocalDateTime.of(2026, 11, 1, 10, 0))));
+        assertThat(service.list(new MatchQuery(2))).extracting(MatchSummaryResponse::id).containsExactly(1);
+
+        when(clubes.findById(9)).thenReturn(Optional.empty());
+        assertThat(assertThrows(ApiException.class, () -> service.list(new MatchQuery(9))).status()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("consulta a partida com os duelos na ordem e responde 404 para id inválido")
+    void getsMatchWithDuels() {
+        Clube alfa = new Clube();
+        alfa.nome("Alfa FC");
+        ReflectionTestUtils.setField(alfa, "id", 1);
+        Clube beta = new Clube();
+        beta.nome("Beta FC");
+        ReflectionTestUtils.setField(beta, "id", 2);
+        when(clubes.findAll()).thenReturn(List.of(alfa, beta));
+        when(partidas.findById(15)).thenReturn(Optional.of(
+                partida(15, 1, 2, 1, 2, java.time.LocalDateTime.of(2026, 11, 5, 16, 40))));
+        when(duelos.findByPartidaId(15)).thenReturn(List.of(duelo(2, "Lauro Neves"), duelo(1, "Otto Rangel")));
+
+        MatchResponse response = service.get("15");
+
+        assertThat(response.homeClubName()).isEqualTo("Alfa FC");
+        assertThat(response.awayClubName()).isEqualTo("Beta FC");
+        assertThat(response.duels()).extracting(DuelResponse::order).containsExactly(1, 2);
+        assertThat(response.duels().get(0).attacker().name()).isEqualTo("Otto Rangel");
+        assertThat(response.duels().get(0).goal()).isTrue();
+        assertThat(response.duels().get(1).goal()).isFalse();
+        assertThat(assertThrows(ApiException.class, () -> service.get("abc")).status()).isEqualTo(404);
     }
 }
