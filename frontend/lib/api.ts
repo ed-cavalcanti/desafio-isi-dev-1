@@ -16,5 +16,9 @@ export async function apiFetch<T>(
     throw new Error(body?.message ?? "Não foi possível carregar os dados.");
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }

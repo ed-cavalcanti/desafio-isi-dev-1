@@ -12,11 +12,11 @@ import {
 
 export const sortOptions = [
   { value: "name", label: "Nome" },
-  { value: "position", label: "Posição (GOL a ATA)" },
   { value: "value_desc", label: "Maior valor de mercado" },
   { value: "value_asc", label: "Menor valor de mercado" },
-  { value: "age_desc", label: "Idade (maior)" },
-  { value: "age_asc", label: "Idade (menor)" },
+  { value: "age_desc", label: "Maior idade" },
+  { value: "age_asc", label: "Menor idade" },
+  { value: "position", label: "Posição (GOL a ATA)" },
 ] as const;
 
 export type PlayerSort = (typeof sortOptions)[number]["value"];

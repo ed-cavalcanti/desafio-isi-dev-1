@@ -13,6 +13,7 @@ import type { PlayerAction } from "@/components/players/player-actions-menu";
 import { PlayerConditionDialog } from "@/components/players/player-condition-dialog";
 import { PlayerCreateDialog } from "@/components/players/player-create-dialog";
 import { PlayerCreatedDialog } from "@/components/players/player-created-dialog";
+import { PlayerDeleteDialog } from "@/components/players/player-delete-dialog";
 import { PlayerDetailsSheet } from "@/components/players/player-details-sheet";
 import { PlayerEditDialog } from "@/components/players/player-edit-dialog";
 import { PlayersActiveFilters } from "@/components/players/players-active-filters";
@@ -133,6 +134,7 @@ export default function PlayersPage() {
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [conditionPlayer, setConditionPlayer] = useState<Player | null>(null);
+  const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -246,6 +248,7 @@ export default function PlayersPage() {
     if (action === "view") setViewingPlayer(player);
     if (action === "edit") setEditingPlayer(player);
     if (action === "condition") setConditionPlayer(player);
+    if (action === "delete") setDeletingPlayer(player);
   };
 
   const handleDetailsEdit = (player: Player) => {
@@ -259,6 +262,14 @@ export default function PlayersPage() {
   };
 
   const handlePlayerUpdated = () => {
+    setReloadKey((key) => key + 1);
+  };
+
+  const handlePlayerDeleted = () => {
+    setDeletingPlayer(null);
+    if (players.length === 1 && page > 1) {
+      setPage((current) => current - 1);
+    }
     setReloadKey((key) => key + 1);
   };
 
@@ -284,6 +295,11 @@ export default function PlayersPage() {
   const viewingPlayerClub =
     viewingPlayer && viewingPlayer.club_id !== null
       ? (clubsById[viewingPlayer.club_id] ?? null)
+      : null;
+
+  const deletingPlayerClub =
+    deletingPlayer && deletingPlayer.club_id !== null
+      ? (clubsById[deletingPlayer.club_id] ?? null)
       : null;
 
   const totalPages = meta?.total_pages ?? 0;
@@ -451,6 +467,15 @@ export default function PlayersPage() {
           if (!open) setConditionPlayer(null);
         }}
         onUpdated={handlePlayerUpdated}
+      />
+
+      <PlayerDeleteDialog
+        player={deletingPlayer}
+        club={deletingPlayerClub}
+        onOpenChange={(open) => {
+          if (!open) setDeletingPlayer(null);
+        }}
+        onDeleted={handlePlayerDeleted}
       />
 
       <PlayerCreatedDialog
