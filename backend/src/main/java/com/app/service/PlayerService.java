@@ -38,13 +38,15 @@ public class PlayerService {
     private final PlayerMapper mapper;
     private final ClubeRepository clubes;
     private final JogadorRepository jogadores;
+    private final LineupService lineups;
 
     public PlayerService(PlayerRequestValidator validator, PlayerMapper mapper, ClubeRepository clubes,
-            JogadorRepository jogadores) {
+            JogadorRepository jogadores, LineupService lineups) {
         this.validator = validator;
         this.mapper = mapper;
         this.clubes = clubes;
         this.jogadores = jogadores;
+        this.lineups = lineups;
     }
 
     @Transactional
@@ -87,7 +89,8 @@ public class PlayerService {
 
     /**
      * RN02: muda a condição física; de DOENTE não vai direto para APTO e enviar
-     * a condição atual é aceito, sem mudança.
+     * a condição atual é aceito, sem mudança. Titular que passa a DOENTE sai da
+     * escalação (RN19.5).
      */
     @Transactional
     public PlayerResponse changeCondition(String rawId, JsonNode body) {
@@ -99,6 +102,9 @@ public class PlayerService {
         }
         jogador.condicao(condition);
         jogador.atualizadoEm(BrasiliaTime.now());
+        if (condition == Condition.DOENTE) {
+            lineups.removeTitular(id);
+        }
         return mapper.toResponse(jogadores.save(jogador));
     }
 
