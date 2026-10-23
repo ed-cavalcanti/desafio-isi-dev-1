@@ -1,3 +1,6 @@
+import { ShoppingCart } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   formatCoins,
@@ -7,6 +10,10 @@ import {
   getInitials,
 } from "@/lib/format";
 import { AgilityBar } from "@/components/players/agility-bar";
+import {
+  PlayerActionsMenu,
+  type PlayerAction,
+} from "@/components/players/player-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -55,9 +62,14 @@ function headClassName(column: string) {
 type PlayersTableProps = {
   players: Player[];
   clubsById: Record<number, Club>;
+  onPlayerAction?: (action: PlayerAction, player: Player) => void;
 };
 
-export function PlayersTable({ players, clubsById }: PlayersTableProps) {
+export function PlayersTable({
+  players,
+  clubsById,
+  onPlayerAction,
+}: PlayersTableProps) {
   return (
     <Table>
       <TableHeader className="bg-muted-subtle">
@@ -154,7 +166,27 @@ export function PlayersTable({ players, clubsById }: PlayersTableProps) {
                     `Clube #${player.club_id}`
                   )}
                 </TableCell>
-                <TableCell className="lg:min-w-35"></TableCell>
+                <TableCell className="lg:min-w-35">
+                  <div className="flex items-center justify-end gap-1">
+                    {player.club_id === null ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onPlayerAction?.("buy", player)}
+                        className="h-8 hover:cursor-pointer text-body-sm-medium text-foreground"
+                      >
+                        <ShoppingCart />
+                        Comprar
+                      </Button>
+                    ) : null}
+                    <PlayerActionsMenu
+                      player={player}
+                      club={club}
+                      onAction={onPlayerAction}
+                    />
+                  </div>
+                </TableCell>
               </TableRow>
             );
           })

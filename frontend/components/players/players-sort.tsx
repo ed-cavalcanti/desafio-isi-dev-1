@@ -35,7 +35,7 @@ export function PlayersSort({ value, onValueChange }: PlayersSortProps) {
     >
       <SelectTrigger
         aria-label="Ordenar jogadores"
-        className="h-9! w-auto! min-w-52"
+        className="h-9! w-auto! min-w-52 hover:cursor-pointer hover:bg-muted"
       >
         <ArrowUpDown className="size-4 text-muted-foreground" />
         <SelectValue>

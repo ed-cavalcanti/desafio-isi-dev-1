@@ -75,6 +75,7 @@ export function PlayersFilters({
       options={clubOptions}
       allLabel="Todos os clubes"
       disabled={clubFilterDisabled}
+      className="hover:cursor-pointer hover:bg-muted"
     />
   );
 
@@ -103,6 +104,7 @@ export function PlayersFilters({
           }
           options={positionOptions}
           allLabel="Todas as posições"
+          className="hover:cursor-pointer hover:bg-muted"
         />
         <FilterSelect
           ariaLabel="Filtrar por condição"
@@ -118,6 +120,7 @@ export function PlayersFilters({
           }
           options={conditionOptions}
           allLabel="Todas as condições"
+          className="hover:cursor-pointer hover:bg-muted"
         />
 
         {clubFilterDisabled ? (
@@ -140,6 +143,7 @@ export function PlayersFilters({
           onValueChange={(value) => updateFilter("ageRange", value)}
           options={ageOptions}
           allLabel="Qualquer idade"
+          className="hover:cursor-pointer hover:bg-muted"
         />
         <FilterSelect
           ariaLabel="Filtrar por valor de mercado"
@@ -150,7 +154,7 @@ export function PlayersFilters({
           onValueChange={(value) => updateFilter("valueRange", value)}
           options={valueOptions}
           allLabel="Qualquer valor"
-          className="min-w-44"
+          className="min-w-44 hover:cursor-pointer hover:bg-muted"
         />
       </CardContent>
     </Card>
