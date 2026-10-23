@@ -90,6 +90,16 @@ export default function ClubDetailsPage() {
     };
   }, [id, reloadKey]);
 
+  const handleSold = () => {
+    apiFetch<ClubDetails>(`/api/v1/clubs/${id}`)
+      .then(setClub)
+      .catch(() => undefined);
+
+    apiFetch<ClubTransactions>(`/api/v1/clubs/${id}/transactions`)
+      .then((response) => setTransactionCount(response.data.length))
+      .catch(() => undefined);
+  };
+
   return (
     <main className="flex flex-1 flex-col gap-6 bg-background px-8 py-4 md:py-6">
       {isLoading ? (
@@ -131,9 +141,11 @@ export default function ClubDetailsPage() {
           <ClubSummaryCards club={club} />
           <ClubDetailsTabs
             clubId={club.id}
+            clubName={club.name}
             cash={club.cash}
             players={club.players}
             transactionCount={transactionCount}
+            onSold={handleSold}
           />
         </>
       ) : null}

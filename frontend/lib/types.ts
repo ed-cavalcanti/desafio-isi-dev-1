@@ -41,6 +41,20 @@ export type Purchase = {
   cash: number;
 };
 
+export type Sale = {
+  player_id: number;
+  club_id: number;
+  purchase_value: number;
+  sale_value: number;
+  days_remaining: number;
+  penalty_percent: number;
+  penalty: number;
+  profit: number;
+  commission: number;
+  credit: number;
+  cash: number;
+};
+
 export type Contract = {
   loyalty_until: string;
   days_remaining: number;

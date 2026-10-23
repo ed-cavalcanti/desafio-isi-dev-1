@@ -1,3 +1,5 @@
+"use client";
+
 import { HandCoins } from "lucide-react";
 
 import { ContractPenaltyBadge } from "@/components/clubs/contract-penalty-badge";
@@ -41,9 +43,10 @@ function headClassName(column: string) {
 
 type ClubSquadTableProps = {
   players: SquadPlayer[];
+  onSell: (squadPlayer: SquadPlayer) => void;
 };
 
-export function ClubSquadTable({ players }: ClubSquadTableProps) {
+export function ClubSquadTable({ players, onSell }: ClubSquadTableProps) {
   return (
     <Card className="mt-6 w-full gap-0 overflow-hidden py-0">
       <div className="flex flex-col gap-1 border-b border-border px-4 py-3">
@@ -116,6 +119,7 @@ export function ClubSquadTable({ players }: ClubSquadTableProps) {
                   type="button"
                   variant="outline"
                   size="sm"
+                  onClick={() => onSell({ player, contract })}
                   className="h-8 hover:cursor-pointer"
                 >
                   <HandCoins />

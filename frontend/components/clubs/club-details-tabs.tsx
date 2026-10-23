@@ -2,10 +2,12 @@
 
 import { ClipboardList, History, Shirt, Users } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { ClubLineupTab } from "@/components/clubs/club-lineup-tab";
 import { ClubSquadTable } from "@/components/clubs/club-squad-table";
 import { ClubTransactionsHistory } from "@/components/clubs/club-transactions-history";
+import { PlayerSaleDialog } from "@/components/players/player-sale-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,21 +19,32 @@ const tabTriggerClassName =
 
 type ClubDetailsTabsProps = {
   clubId: number;
+  clubName: string;
   cash: number;
   players: SquadPlayer[];
   transactionCount: number | null;
+  onSold: () => void;
 };
 
 export function ClubDetailsTabs({
   clubId,
+  clubName,
   cash,
   players,
   transactionCount,
+  onSold,
 }: ClubDetailsTabsProps) {
   const squadCount = players.length;
+  const [tab, setTab] = useState("squad");
+  const [sellingPlayer, setSellingPlayer] = useState<SquadPlayer | null>(null);
+
+  const handleShowHistory = () => {
+    setSellingPlayer(null);
+    setTab("history");
+  };
 
   return (
-    <Tabs defaultValue="squad">
+    <Tabs value={tab} onValueChange={(value) => setTab(value as string)}>
       <TabsList
         variant="line"
         className="h-auto w-full justify-start gap-6 rounded-none border-b border-border p-0"
@@ -85,7 +98,7 @@ export function ClubDetailsTabs({
             </div>
           </Card>
         ) : (
-          <ClubSquadTable players={players} />
+          <ClubSquadTable players={players} onSell={setSellingPlayer} />
         )}
       </TabsContent>
       <TabsContent value="lineup">
@@ -94,6 +107,17 @@ export function ClubDetailsTabs({
       <TabsContent value="history">
         <ClubTransactionsHistory clubId={clubId} cash={cash} />
       </TabsContent>
+
+      <PlayerSaleDialog
+        clubId={clubId}
+        clubName={clubName}
+        squadPlayer={sellingPlayer}
+        onOpenChange={(open) => {
+          if (!open) setSellingPlayer(null);
+        }}
+        onSold={onSold}
+        onShowHistory={handleShowHistory}
+      />
     </Tabs>
   );
 }
