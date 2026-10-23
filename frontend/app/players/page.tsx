@@ -16,6 +16,7 @@ import { PlayerCreatedDialog } from "@/components/players/player-created-dialog"
 import { PlayerDeleteDialog } from "@/components/players/player-delete-dialog";
 import { PlayerDetailsSheet } from "@/components/players/player-details-sheet";
 import { PlayerEditDialog } from "@/components/players/player-edit-dialog";
+import { PlayerPurchaseDialog } from "@/components/players/player-purchase-dialog";
 import { PlayersActiveFilters } from "@/components/players/players-active-filters";
 import { PlayersFilters } from "@/components/players/players-filters";
 import {
@@ -129,12 +130,14 @@ export default function PlayersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [clubsReloadKey, setClubsReloadKey] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createdPlayer, setCreatedPlayer] = useState<Player | null>(null);
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [conditionPlayer, setConditionPlayer] = useState<Player | null>(null);
   const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
+  const [purchasingPlayer, setPurchasingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -150,7 +153,7 @@ export default function PlayersPage() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [clubsReloadKey]);
 
   useEffect(() => {
     let isActive = true;
@@ -248,6 +251,7 @@ export default function PlayersPage() {
     if (action === "view") setViewingPlayer(player);
     if (action === "edit") setEditingPlayer(player);
     if (action === "condition") setConditionPlayer(player);
+    if (action === "buy") setPurchasingPlayer(player);
     if (action === "delete") setDeletingPlayer(player);
   };
 
@@ -259,6 +263,16 @@ export default function PlayersPage() {
   const handleDetailsCondition = (player: Player) => {
     setViewingPlayer(null);
     setConditionPlayer(player);
+  };
+
+  const handleDetailsBuy = (player: Player) => {
+    setViewingPlayer(null);
+    setPurchasingPlayer(player);
+  };
+
+  const handlePurchased = () => {
+    setReloadKey((key) => key + 1);
+    setClubsReloadKey((key) => key + 1);
   };
 
   const handlePlayerUpdated = () => {
@@ -450,6 +464,16 @@ export default function PlayersPage() {
         }}
         onEdit={handleDetailsEdit}
         onChangeCondition={handleDetailsCondition}
+        onBuy={handleDetailsBuy}
+      />
+
+      <PlayerPurchaseDialog
+        player={purchasingPlayer}
+        clubs={clubs}
+        onOpenChange={(open) => {
+          if (!open) setPurchasingPlayer(null);
+        }}
+        onPurchased={handlePurchased}
       />
 
       <PlayerCreateDialog

@@ -31,6 +31,16 @@ export type Club = {
   net_worth: number;
 };
 
+export type Purchase = {
+  player_id: number;
+  club_id: number;
+  value: number;
+  fee: number;
+  total_cost: number;
+  loyalty_until: string;
+  cash: number;
+};
+
 export type Contract = {
   loyalty_until: string;
   days_remaining: number;
