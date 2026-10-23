@@ -40,6 +40,48 @@ export type Lineup = {
   players: Player[];
 };
 
+export type MatchOutcome = "MANDANTE" | "VISITANTE" | "EMPATE";
+
+export type MatchSummary = {
+  id: number;
+  home_club_id: number;
+  home_club_name: string;
+  away_club_id: number;
+  away_club_name: string;
+  home_goals: number;
+  away_goals: number;
+  result: MatchOutcome;
+  played_at: string;
+};
+
+export type DuelAttribute =
+  | "shooting"
+  | "passing"
+  | "dribbling"
+  | "defending";
+
+export type Duelist = {
+  player_id: number;
+  name: string;
+  position: Position;
+  condition: PlayerCondition;
+  attribute: DuelAttribute;
+  value: number;
+};
+
+export type MatchDuel = {
+  order: number;
+  attacker: Duelist;
+  defender: Duelist;
+  goal: boolean;
+};
+
+export type Match = MatchSummary & {
+  home_formation: Formation;
+  away_formation: Formation;
+  duels: MatchDuel[];
+};
+
 export type PaginationMeta = {
   page: number;
   limit: number;
