@@ -35,44 +35,44 @@ public class Duelo {
     @Column(name = "ordem")
     private Integer ordem;
 
-    @Column(name = "atacante_jogador_id")
+    @Column(name = "atacante_id")
     private Integer atacanteJogadorId;
 
-    @Column(name = "atacante_nome", length = 100)
+    @Column(name = "nome_atacante", length = 100)
     private String atacanteNome;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "atacante_posicao", length = 3)
+    @Column(name = "posicao_atacante", length = 3)
     private Position atacantePosicao;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "atacante_condicao", length = 20)
+    @Column(name = "condicao_atacante", length = 20)
     private Condition atacanteCondicao;
 
-    @Column(name = "atacante_atributo", length = 11)
+    @Column(name = "atributo_ataque", length = 10)
     private String atacanteAtributo;
 
-    @Column(name = "atacante_valor")
+    @Column(name = "valor_ataque")
     private Integer atacanteValor;
 
-    @Column(name = "defensor_jogador_id")
+    @Column(name = "defensor_id")
     private Integer defensorJogadorId;
 
-    @Column(name = "defensor_nome", length = 100)
+    @Column(name = "nome_defensor", length = 100)
     private String defensorNome;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "defensor_posicao", length = 3)
+    @Column(name = "posicao_defensor", length = 3)
     private Position defensorPosicao;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "defensor_condicao", length = 20)
+    @Column(name = "condicao_defensor", length = 20)
     private Condition defensorCondicao;
 
-    @Column(name = "defensor_atributo", length = 11)
+    @Column(name = "atributo_defesa", length = 10)
     private String defensorAtributo;
 
-    @Column(name = "defensor_valor")
+    @Column(name = "valor_defesa")
     private Integer defensorValor;
 
     @Column(name = "gol")

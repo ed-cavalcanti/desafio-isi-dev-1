@@ -33,23 +33,23 @@ public class Transacao {
     @Column(name = "jogador_id")
     private Integer jogadorId;
 
-    @Column(name = "jogador_nome", length = 100)
+    @Column(name = "nome_jogador", length = 100)
     private String jogadorNome;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo", length = 7)
+    @Column(name = "tipo", length = 6)
     private TransactionType tipo;
 
-    @Column(name = "valor", precision = 8, scale = 2)
+    @Column(name = "valor", precision = 6, scale = 2)
     private BigDecimal valor;
 
-    @Column(name = "taxa", precision = 8, scale = 2)
+    @Column(name = "taxa", precision = 6, scale = 2)
     private BigDecimal taxa;
 
-    @Column(name = "multa", precision = 8, scale = 2)
+    @Column(name = "multa", precision = 6, scale = 2)
     private BigDecimal multa;
 
-    @Column(name = "lucro", precision = 8, scale = 2)
+    @Column(name = "lucro", precision = 7, scale = 2)
     private BigDecimal lucro;
 
     @Column(name = "variacao_caixa", precision = 8, scale = 2)
