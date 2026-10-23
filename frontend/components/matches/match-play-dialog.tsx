@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Swords } from "lucide-react";
+import { AlertCircle, Info, Swords } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -137,8 +137,8 @@ export function MatchPlayDialog({
         <DialogHeader className="gap-1 px-6 py-4">
           <DialogTitle className="text-heading-dialog">Nova partida</DialogTitle>
           <DialogDescription className="text-body-sm text-muted-foreground">
-            Escolha o mandante e o visitante. Os dois clubes precisam estar com a
-            escalação completa.
+            Escolha o mandante e o visitante. O placar sai dos atributos dos
+            titulares, sem sorteio.
           </DialogDescription>
         </DialogHeader>
 
@@ -164,6 +164,7 @@ export function MatchPlayDialog({
             <Field
               label="Mandante"
               htmlFor="match-home-club"
+              caption="Faz os 3 primeiros ataques."
               error={errors.homeClubId}
             >
               <Select
@@ -199,6 +200,7 @@ export function MatchPlayDialog({
             <Field
               label="Visitante"
               htmlFor="match-away-club"
+              caption="Precisa ser um clube diferente do mandante."
               error={errors.awayClubId}
             >
               <Select
@@ -231,11 +233,30 @@ export function MatchPlayDialog({
               </Select>
             </Field>
 
-            <div className="flex items-center justify-center gap-1 rounded-[10px] border border-border bg-muted-subtle px-2.5 py-3 text-muted-foreground">
-              <Swords size={16} />
-              <span className="text-body-sm">
-                O placar é calculado pelos atributos dos titulares.
-              </span>
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted-subtle p-4">
+              <div className="flex items-center gap-2">
+                <Info
+                  aria-hidden="true"
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+                <p className="text-body-sm-medium text-foreground">
+                  Como sai o placar
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 text-caption text-muted-foreground">
+                <p>
+                  Cada time faz 3 ataques. Pela ordem do elenco, os jogadores de
+                  linha vão do 1º (mais recuado) ao 4º (mais avançado): o 4º
+                  enfrenta o goleiro, o 3º enfrenta o 1º e o 2º enfrenta o 2º do
+                  adversário. O atacante usa finalização (ATA), passe (MEI) ou
+                  drible (ZAG e LAT), e quem defende usa defesa. É gol só quando
+                  o ataque é maior; mal condicionado joga com 15% a menos.
+                </p>
+                <p>
+                  Os dois clubes precisam ter os 5 titulares escalados. A partida
+                  não mexe no caixa.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -260,7 +281,14 @@ export function MatchPlayDialog({
                 disabled={isSubmitting}
                 className="h-9 hover:cursor-pointer disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Jogando..." : "Jogar partida"}
+                {isSubmitting ? (
+                  "Jogando..."
+                ) : (
+                  <>
+                    <Swords aria-hidden="true" />
+                    Jogar partida
+                  </>
+                )}
               </Button>
             </div>
           </DialogFooter>
