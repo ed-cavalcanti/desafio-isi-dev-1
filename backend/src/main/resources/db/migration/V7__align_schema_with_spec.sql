@@ -2,6 +2,7 @@ ALTER TABLE clubes ADD COLUMN formacao VARCHAR(5);
 ALTER TABLE clubes ADD CONSTRAINT clubes_formacao_check CHECK (formacao IN ('3-1', '2-2', '2-1-1', '1-2-1'));
 ALTER TABLE clubes ALTER COLUMN caixa TYPE DECIMAL(10, 2);
 ALTER TABLE clubes ALTER COLUMN caixa SET DEFAULT 300.00;
+ALTER TABLE clubes ALTER COLUMN sigla TYPE CHAR(3);
 
 UPDATE clubes c SET formacao = e.formacao FROM escalacoes e WHERE e.clube_id = c.id;
 

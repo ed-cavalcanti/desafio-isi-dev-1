@@ -3,6 +3,9 @@ package com.app.persistence;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,7 +33,8 @@ public class Clube {
     @Column(name = "nome_busca", length = 60)
     private String nomeBusca;
 
-    @Column(name = "sigla", length = 3)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "sigla", length = 3, columnDefinition = "CHAR(3)")
     private String sigla;
 
     @Column(name = "caixa", precision = 10, scale = 2)
