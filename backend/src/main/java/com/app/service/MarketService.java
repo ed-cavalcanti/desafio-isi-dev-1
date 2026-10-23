@@ -11,6 +11,7 @@ import com.app.api.PathId;
 import com.app.api.PurchaseRequest;
 import com.app.api.PurchaseRequestValidator;
 import com.app.api.PurchaseResponse;
+import com.app.api.SaleResponse;
 import com.app.mapper.PlayerMapper;
 import com.app.model.BrasiliaTime;
 import com.app.model.ContractStatus;
@@ -43,15 +44,18 @@ public class MarketService {
     private final JogadorRepository jogadores;
     private final ContratoRepository contratos;
     private final TransacaoRepository transacoes;
+    private final LineupService lineups;
 
     public MarketService(PurchaseRequestValidator validator, PlayerMapper playerMapper, ClubeRepository clubes,
-            JogadorRepository jogadores, ContratoRepository contratos, TransacaoRepository transacoes) {
+            JogadorRepository jogadores, ContratoRepository contratos, TransacaoRepository transacoes,
+            LineupService lineups) {
         this.validator = validator;
         this.playerMapper = playerMapper;
         this.clubes = clubes;
         this.jogadores = jogadores;
         this.contratos = contratos;
         this.transacoes = transacoes;
+        this.lineups = lineups;
     }
 
     @Transactional
@@ -88,6 +92,42 @@ public class MarketService {
                 marketValue, fee, BigDecimal.ZERO.setScale(2), null, totalCost.negate(), now));
         return new PurchaseResponse(jogador.id(), clube.id(), marketValue, fee, totalCost,
                 BrasiliaTime.format(request.loyaltyUntil()), clube.caixa());
+    }
+
+    /**
+     * RN15 e RN16: vende o jogador do clube atual pelo valor de mercado do
+     * momento, com multa pela fidelidade restante e comissão progressiva sobre
+     * o lucro; o titular sai da escalação (RN19.5).
+     */
+    @Transactional
+    public SaleResponse sale(String rawId) {
+        int playerId = PathId.parse(rawId);
+        Jogador jogador = findPlayer(playerId);
+        if (jogador.clubeId() == null) {
+            throw ApiException.conflict("Jogador livre não pode ser vendido.");
+        }
+        Clube clube = clubes.findById(jogador.clubeId()).orElseThrow();
+        Contrato contrato = contratos.findByJogadorIdAndStatus(jogador.id(), ContractStatus.ATIVO).orElseThrow();
+        LocalDateTime now = BrasiliaTime.now();
+        BigDecimal marketValue = playerMapper.toResponse(jogador).marketValue();
+        int daysRemaining = MarketCalculator.daysRemaining(contrato.fidelidadeAte(), now);
+        int penaltyPercent = MarketCalculator.penaltyPercent(daysRemaining);
+        BigDecimal penalty = MarketCalculator.penalty(marketValue, penaltyPercent);
+        BigDecimal profit = marketValue.subtract(contrato.valorCompra());
+        BigDecimal commission = MarketCalculator.commission(profit);
+        BigDecimal credit = marketValue.subtract(penalty).subtract(commission);
+        contrato.status(penalty.signum() == 0 ? ContractStatus.ENCERRADO : ContractStatus.RESCINDIDO);
+        contrato.atualizadoEm(now);
+        contratos.save(contrato);
+        clube.caixa(clube.caixa().add(credit));
+        clubes.save(clube);
+        jogador.clubeId(null);
+        jogadores.save(jogador);
+        lineups.removeTitular(jogador.id());
+        transacoes.save(new Transacao(clube.id(), jogador.id(), jogador.nome(), TransactionType.VENDA,
+                marketValue, commission, penalty, profit, credit, now));
+        return new SaleResponse(jogador.id(), clube.id(), contrato.valorCompra(), marketValue, daysRemaining,
+                penaltyPercent, penalty, profit, commission, credit, clube.caixa());
     }
 
     private Jogador findPlayer(int playerId) {

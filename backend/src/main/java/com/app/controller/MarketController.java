@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.app.api.PurchaseResponse;
+import com.app.api.SaleResponse;
 import com.app.service.MarketService;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -26,5 +27,11 @@ public class MarketController {
     @PostMapping("/{id}/purchase")
     public PurchaseResponse purchase(@PathVariable("id") String id, @RequestBody JsonNode body) {
         return marketService.purchase(id, body);
+    }
+
+    @Operation(summary = "Vende um jogador do elenco pelo valor de mercado do momento")
+    @PostMapping("/{id}/sale")
+    public SaleResponse sale(@PathVariable("id") String id) {
+        return marketService.sale(id);
     }
 }

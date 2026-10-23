@@ -22,8 +22,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.app.api.ApiException;
+import com.app.api.LineupRequestValidator;
 import com.app.api.PurchaseRequestValidator;
 import com.app.api.PurchaseResponse;
+import com.app.api.SaleResponse;
 import com.app.mapper.PlayerMapper;
 import com.app.model.BrasiliaTime;
 import com.app.model.Condition;
@@ -34,6 +36,8 @@ import com.app.persistence.Clube;
 import com.app.persistence.ClubeRepository;
 import com.app.persistence.Contrato;
 import com.app.persistence.ContratoRepository;
+import com.app.persistence.EscalacaoRepository;
+import com.app.persistence.EscalacaoTitularRepository;
 import com.app.persistence.Jogador;
 import com.app.persistence.JogadorRepository;
 import com.app.persistence.Transacao;
@@ -60,11 +64,19 @@ class MarketServiceTest {
     @Mock
     private TransacaoRepository transacoes;
 
+    @Mock
+    private EscalacaoRepository escalacoes;
+
+    @Mock
+    private EscalacaoTitularRepository titulares;
+
     private MarketService service;
 
     @BeforeEach
     void setUp() {
-        service = new MarketService(validator, playerMapper, clubes, jogadores, contratos, transacoes);
+        LineupService lineups = new LineupService(new LineupRequestValidator(), playerMapper, clubes, jogadores,
+                escalacoes, titulares);
+        service = new MarketService(validator, playerMapper, clubes, jogadores, contratos, transacoes, lineups);
     }
 
     private String loyalty(long days) {
@@ -222,5 +234,105 @@ class MarketServiceTest {
         PurchaseResponse response = service.purchase("1", body);
 
         assertThat(response.loyaltyUntil()).startsWith(future.format(DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm")));
+    }
+
+    private Contrato contract(int jogadorId, String purchaseValue, long loyaltyDays) {
+        return new Contrato(jogadorId, 1, new BigDecimal(purchaseValue), BrasiliaTime.now().plusDays(loyaltyDays),
+                ContractStatus.ATIVO, BrasiliaTime.now());
+    }
+
+    @Test
+    @DisplayName("vende com multa de fidelidade e comissão sobre o lucro")
+    void sellsPlayerWithPenaltyAndCommission() {
+        Jogador jogador = player(1, 1, "40.00");
+        Contrato contrato = contract(1, "37.00", 100);
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(jogador));
+        when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
+        when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(contrato));
+
+        SaleResponse response = service.sale("1");
+
+        assertThat(response.purchaseValue()).isEqualByComparingTo("37.00");
+        assertThat(response.saleValue()).isEqualByComparingTo("40.00");
+        assertThat(response.daysRemaining()).isEqualTo(100);
+        assertThat(response.penaltyPercent()).isEqualTo(10);
+        assertThat(response.penalty()).isEqualByComparingTo("4.00");
+        assertThat(response.profit()).isEqualByComparingTo("3.00");
+        assertThat(response.commission()).isEqualByComparingTo("0.30");
+        assertThat(response.credit()).isEqualByComparingTo("35.70");
+        assertThat(response.cash()).isEqualByComparingTo("335.70");
+        assertThat(jogador.clubeId()).isNull();
+        assertThat(contrato.status()).isEqualTo(ContractStatus.RESCINDIDO);
+        verify(titulares).deleteByJogadorId(1);
+
+        ArgumentCaptor<Transacao> transaction = ArgumentCaptor.forClass(Transacao.class);
+        verify(transacoes).save(transaction.capture());
+        assertThat(transaction.getValue().tipo()).isEqualTo(TransactionType.VENDA);
+        assertThat(transaction.getValue().jogadorNome()).isEqualTo("Meia Lua");
+        assertThat(transaction.getValue().valor()).isEqualByComparingTo("40.00");
+        assertThat(transaction.getValue().taxa()).isEqualByComparingTo("0.30");
+        assertThat(transaction.getValue().multa()).isEqualByComparingTo("4.00");
+        assertThat(transaction.getValue().lucro()).isEqualByComparingTo("3.00");
+        assertThat(transaction.getValue().variacaoCaixa()).isEqualByComparingTo("35.70");
+    }
+
+    @Test
+    @DisplayName("sem multa a fidelidade é cumprida e o contrato é encerrado")
+    void encursesContractWhenLoyaltyIsFulfilled() {
+        Jogador jogador = player(1, 1, "25.00");
+        Contrato contrato = contract(1, "25.00", -5);
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(jogador));
+        when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
+        when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(contrato));
+
+        SaleResponse response = service.sale("1");
+
+        assertThat(response.daysRemaining()).isZero();
+        assertThat(response.penalty()).isEqualByComparingTo("0.00");
+        assertThat(response.profit()).isEqualByComparingTo("0.00");
+        assertThat(response.commission()).isEqualByComparingTo("0.00");
+        assertThat(response.credit()).isEqualByComparingTo("25.00");
+        assertThat(contrato.status()).isEqualTo(ContractStatus.ENCERRADO);
+    }
+
+    @Test
+    @DisplayName("limita a multa a 10,00 e não cobra comissão sem lucro")
+    void capsPenaltyAndSkipsCommissionWithoutProfit() {
+        Jogador expensive = player(1, 1, "75.00");
+        Contrato cheapBuy = contract(1, "60.00", 200);
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(expensive));
+        when(clubes.findById(1)).thenReturn(Optional.of(club(1, "300.00")));
+        when(contratos.findByJogadorIdAndStatus(1, ContractStatus.ATIVO)).thenReturn(Optional.of(cheapBuy));
+
+        SaleResponse capped = service.sale("1");
+
+        assertThat(capped.penalty()).isEqualByComparingTo("10.00");
+        assertThat(capped.commission()).isEqualByComparingTo("2.00");
+        assertThat(capped.credit()).isEqualByComparingTo("63.00");
+
+        Jogador devalued = player(2, 1, "42.50");
+        Contrato expensiveBuy = contract(2, "50.00", 200);
+        when(jogadores.findByIdAndExcluidoEmIsNull(2)).thenReturn(Optional.of(devalued));
+        when(contratos.findByJogadorIdAndStatus(2, ContractStatus.ATIVO)).thenReturn(Optional.of(expensiveBuy));
+
+        SaleResponse loss = service.sale("2");
+
+        assertThat(loss.penalty()).isEqualByComparingTo("8.50");
+        assertThat(loss.profit()).isEqualByComparingTo("-7.50");
+        assertThat(loss.commission()).isEqualByComparingTo("0.00");
+        assertThat(loss.credit()).isEqualByComparingTo("34.00");
+    }
+
+    @Test
+    @DisplayName("recusa venda de jogador livre e responde 404 para jogador inexistente")
+    void rejectsSaleOfFreeAndUnknownPlayers() {
+        when(jogadores.findByIdAndExcluidoEmIsNull(1)).thenReturn(Optional.of(player(1, null, "36.00")));
+
+        ApiException free = assertThrows(ApiException.class, () -> service.sale("1"));
+        assertThat(free.status()).isEqualTo(409);
+        verify(transacoes, never()).save(any(Transacao.class));
+
+        when(jogadores.findByIdAndExcluidoEmIsNull(9)).thenReturn(Optional.empty());
+        assertThat(assertThrows(ApiException.class, () -> service.sale("9")).status()).isEqualTo(404);
     }
 }
