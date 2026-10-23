@@ -10,4 +10,6 @@ public interface JogadorRepository extends JpaRepository<Jogador, Integer> {
     List<Jogador> findByExcluidoEmIsNull();
 
     Optional<Jogador> findByIdAndExcluidoEmIsNull(Integer id);
+
+    long countByClubeId(Integer clubeId);
 }
