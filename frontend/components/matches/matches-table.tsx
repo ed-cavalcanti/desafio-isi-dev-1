@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 import { ClubAvatar } from "@/components/clubs/club-avatar";
 import { MatchResultBadge } from "@/components/matches/match-result-badge";
@@ -31,18 +32,13 @@ const columns = [
 type MatchesTableProps = {
   matches: MatchSummary[];
   clubsById: Record<number, Club>;
-  onViewDuels: (match: MatchSummary) => void;
 };
 
 function getAcronym(clubsById: Record<number, Club>, clubId: number) {
   return clubsById[clubId]?.acronym ?? "";
 }
 
-export function MatchesTable({
-  matches,
-  clubsById,
-  onViewDuels,
-}: MatchesTableProps) {
+export function MatchesTable({ matches, clubsById }: MatchesTableProps) {
   return (
     <Table>
       <TableHeader className="bg-muted-subtle">
@@ -116,13 +112,13 @@ export function MatchesTable({
               </TableCell>
               <TableCell className="text-right lg:min-w-28">
                 <Button
-                  type="button"
+                  nativeButton={false}
                   variant="ghost"
                   size="sm"
+                  render={<Link href={`/matches/${match.id}`} />}
                   className="gap-1 text-body-sm-medium text-foreground hover:cursor-pointer"
-                  onClick={() => onViewDuels(match)}
                 >
-                  Ver duelos
+                  Ver partida
                   <ChevronRight aria-hidden="true" />
                 </Button>
               </TableCell>

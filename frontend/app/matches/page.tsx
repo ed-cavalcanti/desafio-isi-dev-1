@@ -1,10 +1,10 @@
 "use client";
 
 import { AlertCircle, Plus, Swords } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { LatestMatchCard } from "@/components/matches/latest-match-card";
-import { MatchDuelsDialog } from "@/components/matches/match-duels-dialog";
 import { MatchPlayDialog } from "@/components/matches/match-play-dialog";
 import { MatchesClubFilter } from "@/components/matches/matches-club-filter";
 import {
@@ -17,13 +17,9 @@ import { apiFetch } from "@/lib/api";
 import { ALL_CLUBS, formatMatchScore } from "@/lib/match";
 import type { Club, Match, MatchSummary } from "@/lib/types";
 
-type ViewingMatch = {
-  id: number;
-  data?: Match;
-};
-
 export default function MatchesPage() {
   const toastManager = useToast();
+  const router = useRouter();
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [clubId, setClubId] = useState<string>(ALL_CLUBS);
@@ -31,7 +27,6 @@ export default function MatchesPage() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [isPlayOpen, setIsPlayOpen] = useState(false);
-  const [viewingMatch, setViewingMatch] = useState<ViewingMatch | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -87,7 +82,6 @@ export default function MatchesPage() {
 
   const handleMatchPlayed = (match: Match) => {
     setIsPlayOpen(false);
-    setViewingMatch({ id: match.id, data: match });
     setReloadKey((key) => key + 1);
 
     toastManager.add({
@@ -98,10 +92,8 @@ export default function MatchesPage() {
       )} ${match.away_club_name}`,
       type: "success",
     });
-  };
 
-  const handleViewDuels = (match: MatchSummary) => {
-    setViewingMatch({ id: match.id });
+    router.push(`/matches/${match.id}`);
   };
 
   return (
@@ -136,11 +128,7 @@ export default function MatchesPage() {
           <h2 className="text-body-sm-medium text-muted-foreground">
             Última partida
           </h2>
-          <LatestMatchCard
-            match={latestMatch}
-            clubsById={clubsById}
-            onViewDuels={handleViewDuels}
-          />
+          <LatestMatchCard match={latestMatch} clubsById={clubsById} />
         </section>
       ) : null}
 
@@ -181,11 +169,7 @@ export default function MatchesPage() {
             </Button>
           </div>
         ) : (
-          <MatchesTable
-            matches={matches}
-            clubsById={clubsById}
-            onViewDuels={handleViewDuels}
-          />
+          <MatchesTable matches={matches} clubsById={clubsById} />
         )}
 
         {!isLoading && !error ? (
@@ -201,7 +185,7 @@ export default function MatchesPage() {
 
       <p className="text-caption text-muted-foreground">
         Partidas da mais recente para a mais antiga, com filtro por clube. “Ver
-        duelos” abre a partida.
+        partida” abre o jogo com o campo e os duelos.
       </p>
 
       <MatchPlayDialog
@@ -209,15 +193,6 @@ export default function MatchesPage() {
         clubs={clubs}
         onOpenChange={setIsPlayOpen}
         onPlayed={handleMatchPlayed}
-      />
-
-      <MatchDuelsDialog
-        matchId={viewingMatch?.id ?? null}
-        initialMatch={viewingMatch?.data ?? null}
-        clubsById={clubsById}
-        onOpenChange={(open) => {
-          if (!open) setViewingMatch(null);
-        }}
       />
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 import { ClubAvatar } from "@/components/clubs/club-avatar";
 import { MatchResultBadge } from "@/components/matches/match-result-badge";
@@ -12,7 +13,6 @@ import type { Club, MatchSummary } from "@/lib/types";
 type LatestMatchCardProps = {
   match: MatchSummary;
   clubsById: Record<number, Club>;
-  onViewDuels: (match: MatchSummary) => void;
 };
 
 function getAcronym(clubsById: Record<number, Club>, clubId: number) {
@@ -22,7 +22,6 @@ function getAcronym(clubsById: Record<number, Club>, clubId: number) {
 export function LatestMatchCard({
   match,
   clubsById,
-  onViewDuels,
 }: LatestMatchCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
@@ -66,12 +65,12 @@ export function LatestMatchCard({
         </div>
 
         <Button
-          type="button"
+          nativeButton={false}
           variant="outline"
+          render={<Link href={`/matches/${match.id}`} />}
           className="h-9 hover:cursor-pointer"
-          onClick={() => onViewDuels(match)}
         >
-          Ver duelos
+          Ver partida
           <ChevronRight aria-hidden="true" />
         </Button>
       </div>
