@@ -24,14 +24,14 @@ public class MarketController {
     }
 
     @Operation(summary = "Compra um jogador livre para um clube, com contrato de fidelidade")
-    @PostMapping("/{id}/purchase")
-    public PurchaseResponse purchase(@PathVariable("id") String id, @RequestBody JsonNode body) {
+    @PostMapping("/{id}/buy")
+    public PurchaseResponse buy(@PathVariable("id") String id, @RequestBody JsonNode body) {
         return marketService.purchase(id, body);
     }
 
     @Operation(summary = "Vende um jogador do elenco pelo valor de mercado do momento")
-    @PostMapping("/{id}/sale")
-    public SaleResponse sale(@PathVariable("id") String id) {
+    @PostMapping("/{id}/sell")
+    public SaleResponse sell(@PathVariable("id") String id) {
         return marketService.sale(id);
     }
 }

@@ -114,7 +114,7 @@ export function PlayerSaleDialog({
 
     try {
       const result = await apiFetch<Sale>(
-        `/api/v1/players/${squadPlayer.player.id}/sale`,
+        `/api/v1/players/${squadPlayer.player.id}/sell`,
         { method: "POST" },
       );
 

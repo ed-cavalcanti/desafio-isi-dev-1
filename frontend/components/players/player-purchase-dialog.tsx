@@ -172,7 +172,7 @@ export function PlayerPurchaseDialog({
 
     try {
       const result = await apiFetch<Purchase>(
-        `/api/v1/players/${player.id}/purchase`,
+        `/api/v1/players/${player.id}/buy`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
