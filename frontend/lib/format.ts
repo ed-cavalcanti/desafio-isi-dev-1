@@ -13,6 +13,10 @@ export function formatSignedCoins(value: number) {
   return value > 0 ? `+${formatCoins(value)}` : formatCoins(value);
 }
 
+export function formatGoalDifference(value: number) {
+  return value > 0 ? `+${value}` : String(value);
+}
+
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "2-digit",
