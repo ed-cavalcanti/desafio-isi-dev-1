@@ -10,7 +10,7 @@ import com.app.model.BrasiliaTime;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Validação do corpo de POST /players/{id}/purchase: o clube comprador e o fim
+ * Validação do corpo de POST /players/{id}/buy: o clube comprador e o fim
  * da fidelidade no formato da RN01 (RN12).
  */
 @Component
