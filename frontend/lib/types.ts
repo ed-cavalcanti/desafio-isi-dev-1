@@ -27,6 +27,8 @@ export type Club = {
   name: string;
   acronym: string;
   cash: number;
+  squad_value: number;
+  net_worth: number;
 };
 
 export type Formation = "3-1" | "2-2" | "2-1-1" | "1-2-1";

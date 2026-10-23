@@ -17,7 +17,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     <ToastPrimitive.Provider>
       {children}
       <ToastPrimitive.Portal>
-        <ToastPrimitive.Viewport className="fixed right-4 bottom-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2 outline-none">
+        <ToastPrimitive.Viewport className="fixed right-4 bottom-4 z-100 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2 outline-none">
           <ToastList />
         </ToastPrimitive.Viewport>
       </ToastPrimitive.Portal>
