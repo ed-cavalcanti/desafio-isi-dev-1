@@ -51,6 +51,10 @@
   --text-caption--line-height: 1rem;
   --text-caption--font-weight: 400;
 
+  --text-caption-xs: 0.6875rem;
+  --text-caption-xs--line-height: 0.875rem;
+  --text-caption-xs--font-weight: 400;
+
   --text-caption-medium: 0.75rem;
   --text-caption-medium--line-height: 1rem;
   --text-caption-medium--font-weight: 500;

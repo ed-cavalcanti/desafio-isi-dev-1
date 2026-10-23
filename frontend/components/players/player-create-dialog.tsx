@@ -18,6 +18,10 @@ import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api";
 import { formatPosition } from "@/lib/format";
 import {
+  PLAYER_ATTRIBUTE_FIELDS,
+  type PlayerAttributeField,
+} from "@/lib/player-attributes";
+import {
   normalizeName,
   parseInteger,
   validatePlayerName,
@@ -28,16 +32,7 @@ import { Separator } from "../ui/separator";
 
 const POSITIONS: Position[] = ["GOL", "ZAG", "LAT", "MEI", "ATA"];
 
-type NumericField =
-  | "age"
-  | "agility"
-  | "pace"
-  | "shooting"
-  | "passing"
-  | "dribbling"
-  | "defending"
-  | "physical"
-  | "potential";
+type NumericField = "age" | "agility" | PlayerAttributeField | "potential";
 
 type PlayerFormValues = {
   name: string;
@@ -89,15 +84,6 @@ const NUMERIC_LIMITS: Record<
   potential: { label: "Potencial", min: 1, max: 99 },
 };
 
-const ATTRIBUTE_FIELDS: { field: NumericField; label: string }[] = [
-  { field: "pace", label: "Velocidade" },
-  { field: "shooting", label: "Finalização" },
-  { field: "passing", label: "Passe" },
-  { field: "dribbling", label: "Drible" },
-  { field: "defending", label: "Defesa" },
-  { field: "physical", label: "Físico" },
-];
-
 const ATTRIBUTES_SUM_MAX = 480;
 
 function emptyForm(): PlayerFormValues {
@@ -132,7 +118,7 @@ function getAttributePreview(
 ): AttributePreviewData | null {
   const attributes: AttributePreviewItem[] = [];
 
-  for (const { field, label } of ATTRIBUTE_FIELDS) {
+  for (const { field, label } of PLAYER_ATTRIBUTE_FIELDS) {
     const value = parseInteger(values[field].trim());
     const { min, max } = NUMERIC_LIMITS[field];
 
@@ -222,7 +208,9 @@ function validate(values: PlayerFormValues) {
       "Para jogadores com 35 anos ou mais, a agilidade deve ser no máximo 85.";
   }
 
-  const attributeValues = ATTRIBUTE_FIELDS.map(({ field }) => numbers[field]);
+  const attributeValues = PLAYER_ATTRIBUTE_FIELDS.map(
+    ({ field }) => numbers[field],
+  );
 
   if (attributeValues.every((value): value is number => value !== null)) {
     const attributesSum = attributeValues.reduce(
@@ -546,7 +534,7 @@ export function PlayerCreateDialog({
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15.25rem]">
                 <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {ATTRIBUTE_FIELDS.map(({ field, label }) => (
+                    {PLAYER_ATTRIBUTE_FIELDS.map(({ field, label }) => (
                       <NumberField
                         key={field}
                         id={`player-${field}`}

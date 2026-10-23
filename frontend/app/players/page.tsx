@@ -13,6 +13,7 @@ import type { PlayerAction } from "@/components/players/player-actions-menu";
 import { PlayerConditionDialog } from "@/components/players/player-condition-dialog";
 import { PlayerCreateDialog } from "@/components/players/player-create-dialog";
 import { PlayerCreatedDialog } from "@/components/players/player-created-dialog";
+import { PlayerDetailsSheet } from "@/components/players/player-details-sheet";
 import { PlayerEditDialog } from "@/components/players/player-edit-dialog";
 import { PlayersActiveFilters } from "@/components/players/players-active-filters";
 import { PlayersFilters } from "@/components/players/players-filters";
@@ -129,6 +130,7 @@ export default function PlayersPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createdPlayer, setCreatedPlayer] = useState<Player | null>(null);
+  const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [conditionPlayer, setConditionPlayer] = useState<Player | null>(null);
 
@@ -241,8 +243,19 @@ export default function PlayersPage() {
   };
 
   const handlePlayerAction = (action: PlayerAction, player: Player) => {
+    if (action === "view") setViewingPlayer(player);
     if (action === "edit") setEditingPlayer(player);
     if (action === "condition") setConditionPlayer(player);
+  };
+
+  const handleDetailsEdit = (player: Player) => {
+    setViewingPlayer(null);
+    setEditingPlayer(player);
+  };
+
+  const handleDetailsCondition = (player: Player) => {
+    setViewingPlayer(null);
+    setConditionPlayer(player);
   };
 
   const handlePlayerUpdated = () => {
@@ -267,6 +280,11 @@ export default function PlayersPage() {
     setSort(nextSort);
     setPage(1);
   };
+
+  const viewingPlayerClub =
+    viewingPlayer && viewingPlayer.club_id !== null
+      ? (clubsById[viewingPlayer.club_id] ?? null)
+      : null;
 
   const totalPages = meta?.total_pages ?? 0;
   const hasPreviousPage = page > 1;
@@ -402,6 +420,16 @@ export default function PlayersPage() {
           </div>
         ) : null}
       </section>
+
+      <PlayerDetailsSheet
+        player={viewingPlayer}
+        club={viewingPlayerClub}
+        onOpenChange={(open) => {
+          if (!open) setViewingPlayer(null);
+        }}
+        onEdit={handleDetailsEdit}
+        onChangeCondition={handleDetailsCondition}
+      />
 
       <PlayerCreateDialog
         open={isCreateOpen}
