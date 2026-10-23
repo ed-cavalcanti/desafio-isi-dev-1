@@ -1,9 +1,9 @@
 FROM node:20-alpine AS build
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG BACKEND_URL
+ENV BACKEND_URL=$BACKEND_URL
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 

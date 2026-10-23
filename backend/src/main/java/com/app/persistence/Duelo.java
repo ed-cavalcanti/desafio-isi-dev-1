@@ -14,10 +14,11 @@ import jakarta.persistence.Table;
 
 /**
  * Duelo gravado com os nomes, as posições, as condições, os atributos e os
- * valores usados no momento da partida (RN20.7), mapeado na tabela duelos.
+ * valores usados no momento da partida (RN20.7), mapeado na tabela
+ * duelos_partida.
  */
 @Entity
-@Table(name = "duelos")
+@Table(name = "duelos_partida")
 public class Duelo {
 
     @Id
