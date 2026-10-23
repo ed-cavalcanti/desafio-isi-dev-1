@@ -120,7 +120,7 @@ public class ClubService {
         }
         int daysRemaining = MarketCalculator.daysRemaining(contrato.fidelidadeAte(), now);
         return new ContractResponse(BrasiliaTime.format(contrato.fidelidadeAte()), daysRemaining,
-                MarketCalculator.penaltyPercent(daysRemaining));
+                MarketCalculator.penaltyPercent(daysRemaining), contrato.valorCompra());
     }
 
     private Map<Integer, BigDecimal> squadValues() {

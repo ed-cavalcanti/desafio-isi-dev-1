@@ -1,6 +1,6 @@
 "use client";
 
-import { ListOrdered, Swords, Users } from "lucide-react";
+import { ListOrdered, Shield, Swords, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -21,6 +21,7 @@ import Image from "next/image";
 
 const marketNavigation = [
   { title: "Jogadores", href: "/players", icon: Users },
+  { title: "Todos os clubes", href: "/clubs", icon: Shield },
 ];
 
 const leagueNavigation = [
@@ -78,8 +79,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarClubs />
-
         <SidebarGroup>
           <SidebarGroupLabel>Liga</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -100,6 +99,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarClubs />
       </SidebarContent>
 
       <SidebarFooter />

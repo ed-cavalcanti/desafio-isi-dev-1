@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, Plus, Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ClubCreateDialog } from "@/components/clubs/club-create-dialog";
@@ -11,6 +12,7 @@ import { apiFetch } from "@/lib/api";
 import type { Club } from "@/lib/types";
 
 export default function ClubsPage() {
+  const router = useRouter();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [sort, setSort] = useState<ClubSort>("name");
   const [isLoading, setIsLoading] = useState(true);
@@ -47,8 +49,8 @@ export default function ClubsPage() {
     };
   }, [reloadKey, sort]);
 
-  const handleClubCreated = () => {
-    setReloadKey((key) => key + 1);
+  const handleClubCreated = (club: Club) => {
+    router.push(`/clubs/${club.id}`);
   };
 
   const handleSortChange = (nextSort: ClubSort) => {

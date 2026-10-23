@@ -1,11 +1,10 @@
 "use client";
 
-import { Plus, Shield } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ClubAvatar } from "@/components/clubs/club-avatar";
 import { ClubCreateDialog } from "@/components/clubs/club-create-dialog";
 import {
   SidebarGroup,
@@ -19,8 +18,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
 import type { Club } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const CLUBS_PATH = "/clubs";
+
+function getClubInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase();
+}
 
 export function SidebarClubs() {
   const pathname = usePathname();
@@ -67,18 +71,6 @@ export function SidebarClubs() {
       </SidebarGroupAction>
       <SidebarGroupContent>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={pathname === CLUBS_PATH}
-              aria-current={pathname === CLUBS_PATH ? "page" : undefined}
-              tooltip="Todos os clubes"
-              render={<Link href={CLUBS_PATH} />}
-            >
-              <Shield />
-              <span>Todos os clubes</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
           {isLoading ? (
             <SidebarClubsLoading />
           ) : clubs.length === 0 ? (
@@ -98,10 +90,17 @@ export function SidebarClubs() {
                     tooltip={club.name}
                     render={<Link href={href} />}
                   >
-                    <ClubAvatar
-                      acronym={club.acronym}
-                      className="size-6 rounded-md text-caption-xs"
-                    />
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex size-6 shrink-0 items-center justify-center rounded-md border text-caption-xs font-semibold uppercase group-data-[collapsible=icon]:size-4",
+                        isActive
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-muted text-foreground",
+                      )}
+                    >
+                      {getClubInitial(club.name)}
+                    </span>
                     <span>{club.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -123,7 +122,7 @@ export function SidebarClubs() {
 function SidebarClubsLoading() {
   return Array.from({ length: 3 }).map((_, index) => (
     <li key={index} className="flex h-8 items-center gap-2 px-2">
-      <Skeleton className="size-6 shrink-0 rounded-md" />
+      <Skeleton className="size-6 shrink-0 rounded-md group-data-[collapsible=icon]:size-4" />
       <Skeleton className="h-3 w-24 group-data-[collapsible=icon]:hidden" />
     </li>
   ));
